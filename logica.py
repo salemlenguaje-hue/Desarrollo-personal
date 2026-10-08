@@ -1,11 +1,16 @@
 """
 Lógica de negocio del Diario de Capacitación.
 Acá están todas las funciones que manejan rachas, niveles, compilados, etc.
+AHORA CON BLOCKCHAIN: cada entrada tiene hash, hash previo y firma.
 """
 
 import sqlite3
+import hashlib
+import hmac
+import os
 from datetime import datetime, timedelta
-import json
+
+ARCHIVO_SECRETO = '.secreto'
 
 def obtener_conexion():
     """
@@ -15,6 +20,57 @@ def obtener_conexion():
     conn = sqlite3.connect('database.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+# ==================== BLOCKCHAIN: HASHES Y FIRMAS ====================
+
+def cargar_clave_secreta():
+    """
+    Lee la clave maestra desde el archivo .secreto
+    """
+    if not os.path.exists(ARCHIVO_SECRETO):
+        raise FileNotFoundError(
+            f"No existe {ARCHIVO_SECRETO}. Corré primero: python generar_secreto.py"
+        )
+    with open(ARCHIVO_SECRETO, 'r') as f:
+        return f.read().strip()
+
+def calcular_hash_entrada(fecha, tematica_id, descripcion, resumen, observaciones):
+    """
+    Calcula el hash SHA-256 de una entrada.
+    Es la "huella digital" única de este contenido.
+    """
+    # Concatenamos todos los campos en un string
+    contenido = f"{fecha}|{tematica_id}|{descripcion}|{resumen}|{observaciones}"
+    # Calculamos el hash SHA-256
+    return hashlib.sha256(contenido.encode('utf-8')).hexdigest()
+
+def obtener_hash_ultima_entrada():
+    """
+    Devuelve el hash de la última entrada registrada.
+    Si no hay entradas, devuelve None.
+    """
+    conn = obtener_conexion()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT hash FROM entradas 
+        WHERE hash IS NOT NULL 
+        ORDER BY id DESC 
+        LIMIT 1
+    ''')
+    resultado = cursor.fetchone()
+    conn.close()
+    return resultado['hash'] if resultado else None
+
+def calcular_firma(hash_entrada, clave_secreta):
+    """
+    Calcula la firma HMAC-SHA256 de un hash usando la clave secreta.
+    Es tu "rúbrica digital" que solo vos podés generar.
+    """
+    return hmac.new(
+        clave_secreta.encode('utf-8'),
+        hash_entrada.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
 
 # ==================== GESTIÓN DE TEMÁTICAS ====================
 
@@ -68,21 +124,33 @@ def obtener_tipos_estudio():
     conn.close()
     return [dict(t) for t in tipos]
 
-# ==================== GESTIÓN DE ENTRADAS ====================
+# ==================== GESTIÓN DE ENTRADAS (CON BLOCKCHAIN) ====================
 
 def guardar_entrada(fecha, tematica_id, descripcion, tipos, resumen, observaciones):
     """
-    Guarda una nueva entrada de estudio.
-    tipos es una lista de IDs de tipos de estudio.
+    Guarda una nueva entrada de estudio CON BLOCKCHAIN.
+    Calcula hash, hash previo y firma automáticamente.
     """
+    # Calculamos el hash de esta entrada
+    hash_entrada = calcular_hash_entrada(fecha, tematica_id, descripcion, resumen, observaciones)
+    
+    # Obtenemos el hash de la entrada anterior (para encadenar)
+    hash_previo = obtener_hash_ultima_entrada()
+    
+    # Calculamos la firma con la clave secreta
+    clave_secreta = cargar_clave_secreta()
+    firma = calcular_firma(hash_entrada, clave_secreta)
+    
     conn = obtener_conexion()
     cursor = conn.cursor()
     
-    # Insertamos la entrada
+    # Insertamos la entrada con los campos de blockchain
     cursor.execute('''
-        INSERT INTO entradas (fecha, tematica_id, descripcion, resumen, observaciones)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (fecha, tematica_id, descripcion, resumen, observaciones))
+        INSERT INTO entradas (fecha, tematica_id, descripcion, resumen, observaciones,
+                              hash, hash_previo, firma)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (fecha, tematica_id, descripcion, resumen, observaciones,
+          hash_entrada, hash_previo, firma))
     
     entrada_id = cursor.lastrowid
     
@@ -175,16 +243,16 @@ def actualizar_configuracion(clave, valor):
 
 def calcular_nivel(racha):
     """
-    Devuelve el nivel actual (1 a 8) segun la racha.
-    La idea: cada nivel tiene una META de dias que alcanzar.
-    Cuando llegas a la meta, subis al siguiente nivel.
+    Devuelve el nivel actual (1 a 8) según la racha.
+    La idea: cada nivel tiene una META de días que alcanzar.
+    Cuando llegás a la meta, subís al siguiente nivel.
     Nivel 1: meta 7   | Nivel 2: meta 14  | Nivel 3: meta 21
     Nivel 4: meta 30  | Nivel 5: meta 60  | Nivel 6: meta 90
     Nivel 7: meta 180 | Nivel 8: meta 365
     """
     metas = [7, 14, 21, 30, 60, 90, 180, 365]
     completadas = sum(1 for meta in metas if racha >= meta)
-    # Si completaste las 8 metas, quedas en el nivel 8 (tope)
+    # Si completaste las 8 metas, quedás en el nivel 8 (tope)
     return min(completadas + 1, 8)
 
 
@@ -301,11 +369,12 @@ def obtener_estadisticas():
         'calendario': [dict(row) for row in calendario]
     }
 
-# ==================== COMPILADO DEL DÍA ====================
+# ==================== COMPILADO DEL DÍA (CON BLOCKCHAIN) ====================
 
 def generar_compilado_hoy():
     """
     Genera un texto resumen de todas las entradas del día.
+    INCLUYE LA CADENA DE BLOCKCHAIN (hash, previo, firma).
     """
     config = obtener_configuracion()
     entradas = obtener_entradas_hoy()
@@ -340,6 +409,16 @@ def generar_compilado_hoy():
                 compilado += f"   • Resumen: {entrada['resumen']}\n"
             if entrada.get('observaciones'):
                 compilado += f"   • Observaciones: {entrada['observaciones']}\n"
+            
+            # Mostramos la cadena de blockchain
+            if entrada.get('hash'):
+                compilado += f"   🔒 Hash:      {entrada['hash'][:24]}...\n"
+            if entrada.get('hash_previo'):
+                compilado += f"   🔗 Previo:    {entrada['hash_previo'][:24]}...\n"
+            elif entrada.get('hash'):
+                compilado += f"   🔗 Previo:    (primera entrada)\n"
+            if entrada.get('firma'):
+                compilado += f"   ✍️  Firma:     {entrada['firma'][:24]}...\n"
     
     compilado += f"\nTotal: {len(tematicas_estudiadas)} temáticas estudiadas hoy"
     
