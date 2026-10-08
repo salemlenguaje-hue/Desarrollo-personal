@@ -1,0 +1,326 @@
+/* =====================================================
+   HOJA DE ESTILOS — Diario de Capacitación SALEM
+   Paleta sacada del logo: azules profundos del infinito,
+   más violeta y dorado para lo lúdico (rachas y logros).
+   ===================================================== */
+
+:root {
+  --azul-profundo: #0B2E59;  /* azul oscuro del logo */
+  --azul-medio:    #1663A8;  /* azul medio del logo */
+  --azul-claro:    #4D8FD1;
+  --violeta:       #6C4AB6;  /* toque lúdico que pediste */
+  --dorado:        #F5B301;  /* dorado para rachas y logros */
+  --fondo:         #F2F6FC;  /* fondo suave, casi blanco */
+  --blanco:        #FFFFFF;
+  --texto:         #22304A;
+  --rojo-suave:    #E5484D;
+  --verde-exito:   #2FA36B;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+/* ---------- BOTONES ESTILO DUOLINGO ----------
+   Redondeados, gorditos y con una sombra abajo que parece
+   un botoncito de juguete que se hunde al tocarlo. */
+.boton {
+  display: inline-block;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 22px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: .3px;
+  cursor: pointer;
+  color: var(--blanco);
+  background: var(--azul-medio);
+  box-shadow: 0 4px 0 var(--azul-profundo);  /* la "sombrita 3D" */
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.boton:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--azul-profundo); }
+.boton-dorado  { background: var(--dorado);  color: #4A3200; box-shadow: 0 4px 0 #B8860B; }
+.boton-violeta { background: var(--violeta); box-shadow: 0 4px 0 #4A2F86; }
+
+/* ---------- PANTALLA DE LOGIN ---------- */
+.pantalla-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--azul-profundo) 0%,
+                              var(--azul-medio) 60%, var(--violeta) 100%);
+  padding: 20px;
+}
+.tarjeta-login {
+  background: var(--blanco);
+  border-radius: 24px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+}
+.logo-login { width: 190px; margin-bottom: 8px; }
+.tarjeta-login h1 { color: var(--azul-profundo); font-size: 1.35rem; }
+.subtitulo { color: var(--azul-medio); margin-bottom: 18px; font-weight: 600; }
+
+.tarjeta-login label {
+  display: block; text-align: left;
+  font-weight: 700; margin: 10px 0 4px;
+  color: var(--azul-profundo);
+}
+.tarjeta-login input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #D7E3F4;
+  border-radius: 12px;
+  font-size: 1rem;
+  outline-color: var(--azul-medio);
+}
+.tarjeta-login button { width: 100%; margin-top: 18px; }
+
+.aviso-error {
+  background: #FDECEE; color: var(--rojo-suave);
+  border: 2px solid var(--rojo-suave);
+  border-radius: 12px; padding: 8px;
+  font-weight: 700; margin-bottom: 10px;
+}
+.nota-dev { margin-top: 14px; font-size: .8rem; color: #8A94A6; }
+
+/* =====================================================
+   ESTILOS DE LA PÁGINA PRINCIPAL (se suman a los base)
+   ===================================================== */
+
+/* ---------- PANEL SUPERIOR CON TU LOGO ---------- */
+.header {
+  background: var(--blanco);
+  border-bottom: 4px solid #E3ECF7;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header img { height: 46px; }
+.header .espacio { flex: 1; }
+.link-nav {
+  text-decoration: none;
+  font-weight: 800;
+  color: var(--azul-medio);
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+.link-nav.activo { background: #E8F1FB; color: var(--azul-profundo); }
+.link-nav.salir { color: var(--rojo-suave); }
+
+/* ---------- TARJETAS (estilo Duolingo: redondeadas y con sombra) ---------- */
+.tarjeta {
+  background: var(--blanco);
+  border: 2px solid #E3ECF7;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 3px 0 #DCE7F5;
+}
+.tarjeta h2 { color: var(--azul-profundo); margin-bottom: 12px; font-size: 1.15rem; }
+
+/* ---------- ZONA DE RACHA ---------- */
+.zona-racha {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.tarjeta-racha {
+  grid-column: 1 / -1;
+  text-align: center;
+  border: none;
+  color: var(--blanco);
+  background: linear-gradient(135deg, #0B2E59 0%, #1663A8 55%, #6C4AB6 100%);
+  box-shadow: 0 5px 0 #071F3C;
+}
+.fuego { font-size: 2.2rem; }
+.numero-racha {
+  font-size: 3.6rem;
+  font-weight: 900;
+  color: var(--dorado);
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .3);
+  line-height: 1.1;
+}
+.texto-racha { font-weight: 700; opacity: .9; margin-bottom: 8px; }
+.insignia-nivel {
+  display: inline-block;
+  background: rgba(255, 255, 255, .15);
+  border: 2px solid var(--dorado);
+  color: var(--dorado);
+  font-weight: 800;
+  padding: 6px 16px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+.barra-progreso {
+  height: 16px;
+  max-width: 420px;
+  margin: 6px auto;
+  background: rgba(255, 255, 255, .25);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.relleno-progreso {
+  height: 100%;
+  width: 0%;
+  background: var(--dorado);
+  border-radius: 999px;
+  transition: width .8s ease;
+}
+.texto-progreso { font-size: .9rem; font-weight: 700; opacity: .95; }
+
+.tarjeta-mini { text-align: center; }
+.mini-titulo { font-weight: 800; color: var(--azul-medio); font-size: .9rem; }
+.mini-numero { font-size: 2.2rem; font-weight: 900; color: var(--azul-profundo); }
+.mini-numero.chico { font-size: 1.4rem; }
+.mini-detalle { color: #7A8699; font-size: .85rem; font-weight: 600; }
+
+/* ---------- PANEL DE CONTROL ---------- */
+.zona-control {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 14px;
+}
+.fila-form { display: flex; gap: 8px; }
+.fila-form input { flex: 1; }
+
+input[type="text"], select, textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 2px solid #D7E3F4;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  outline-color: var(--azul-medio);
+  background: var(--blanco);
+}
+form label {
+  display: block;
+  font-weight: 700;
+  color: var(--azul-profundo);
+  margin: 12px 0 5px;
+}
+
+.lista-tematicas { list-style: none; margin-top: 12px; }
+.lista-tematicas li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F0F6FD;
+  border: 2px solid #DCE9F8;
+  border-radius: 12px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--azul-profundo);
+}
+.boton-chico {
+  border: none;
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #FDECEE;
+  color: var(--rojo-suave);
+  box-shadow: 0 2px 0 #E5B0B3;
+}
+.boton-chico:active { transform: translateY(1px); box-shadow: none; }
+
+/* Chipcitos para elegir tipos de estudio (varios a la vez) */
+.caja-tipos { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F0F6FD;
+  border: 2px solid #DCE9F8;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-weight: 700;
+  color: var(--azul-profundo);
+  cursor: pointer;
+  margin: 0 !important;
+}
+.chip input { accent-color: var(--violeta); width: auto; }
+
+/* ---------- ENTRADAS DE HOY ---------- */
+.zona-hoy { max-width: 900px; margin: 0 auto; padding: 0 16px 16px; }
+.entrada-hoy {
+  border-left: 6px solid var(--violeta);
+  background: #F7F4FC;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.entrada-titulo { font-weight: 800; color: var(--violeta); margin-bottom: 4px; }
+.entrada-dato { font-size: .92rem; margin: 2px 0; }
+.vacio { color: #7A8699; font-weight: 600; text-align: center; padding: 10px; }
+
+/* ---------- ZONA COMPARTIR ---------- */
+.zona-compartir { max-width: 900px; margin: 0 auto; padding: 0 16px 30px; }
+.tarjeta-compartir { text-align: center; }
+.ayuda { color: #7A8699; font-weight: 600; margin-bottom: 14px; }
+.fila-botones { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.boton-verde { background: #25D366; color: #06301B; box-shadow: 0 4px 0 #128C4A; }
+.boton-suave {
+  background: transparent;
+  color: var(--azul-medio);
+  border: 2px solid var(--azul-medio);
+  box-shadow: none;
+  margin-top: 12px;
+}
+.vista-compilado {
+  text-align: left;
+  background: #0B2E59;
+  color: #DCE9F8;
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 14px;
+  white-space: pre-wrap;
+  font-size: .85rem;
+  overflow-x: auto;
+}
+
+/* ---------- MENSAJITO FLOTANTE (toast) ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--azul-profundo);
+  color: var(--blanco);
+  font-weight: 800;
+  padding: 12px 22px;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
+  opacity: 0;
+  transition: all .35s ease;
+  z-index: 99;
+  max-width: 90%;
+  text-align: center;
+}
+.toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ---------- CELUS CHICOS ---------- */
+@media (max-width: 700px) {
+  .zona-control { grid-template-columns: 1fr; }
+  .header img { height: 38px; }
+  .link-nav { padding: 6px 8px; font-size: .9rem; }
+}

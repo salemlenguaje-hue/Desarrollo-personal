@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario de Capacitación — Inicio</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<!-- El servidor nos deja la racha escrita acá para que el JavaScript la lea -->
+<body data-racha="{{ config.get('racha_actual', '0') }}"
+      data-mejor="{{ config.get('mejor_racha', '0') }}">
+
+  <!-- ========== PANEL SUPERIOR CON TU LOGO ========== -->
+  <header class="header">
+    <img src="/static/salem-logo.png" alt="Logo SALEM">
+    <span class="espacio"></span>
+    <a href="/" class="link-nav activo">Inicio</a>
+    <a href="/analisis" class="link-nav">Análisis 📊</a>
+    <a href="/logout" class="link-nav salir">Salir</a>
+  </header>
+
+  <!-- ========== ZONA DE RACHA Y NIVELES ========== -->
+  <section class="zona-racha">
+    <div class="tarjeta tarjeta-racha">
+      <div class="fuego">🔥</div>
+      <div class="numero-racha" id="numero-racha">0</div>
+      <div class="texto-racha">días de racha</div>
+      <div class="insignia-nivel" id="insignia-nivel">Nivel 1 · Aprendiz 🌱</div>
+      <div class="barra-progreso"><div class="relleno-progreso" id="relleno-progreso"></div></div>
+      <div class="texto-progreso" id="texto-progreso"></div>
+    </div>
+
+    <div class="tarjeta tarjeta-mini">
+      <div class="mini-titulo">🏆 MEJOR RACHA</div>
+      <div class="mini-numero" id="mejor-racha">0</div>
+      <div class="mini-detalle">días</div>
+    </div>
+
+    <div class="tarjeta tarjeta-mini">
+      <div class="mini-titulo">👤 SESIÓN</div>
+      <div class="mini-numero chico">{{ usuario }}</div>
+      <div class="mini-detalle">hoy: {{ entradas_hoy|length }} entrada(s)</div>
+    </div>
+  </section>
+
+  <!-- ========== PANEL DE CONTROL ========== -->
+  <section class="zona-control">
+
+    <!-- Gestión de temáticas -->
+    <div class="tarjeta">
+      <h2>📚 Temáticas</h2>
+      <form id="form-tematica" class="fila-form">
+        <input type="text" id="nueva-tematica" placeholder="Nueva temática…" required>
+        <button class="boton" type="submit">Agregar</button>
+      </form>
+      <ul class="lista-tematicas">
+        {% for t in tematicas %}
+        <li>
+          <span>{{ t.nombre }}</span>
+          <button class="boton-chico boton-borrar" data-id="{{ t.id }}" title="Desactivar">✖</button>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Nueva entrada de estudio -->
+    <div class="tarjeta">
+      <h2>✍️ Nueva entrada de estudio</h2>
+      <form id="form-entrada">
+        <label>Temática</label>
+        <select id="entrada-tematica" required>
+          {% for t in tematicas %}
+          <option value="{{ t.id }}">{{ t.nombre }}</option>
+          {% endfor %}
+        </select>
+
+        <label>Descripción</label>
+        <input type="text" id="entrada-descripcion" placeholder="¿Qué hiciste hoy?" required>
+
+        <label>Tipo de estudio (podés tildar varios)</label>
+        <div class="caja-tipos" id="caja-tipos">
+          {% for tipo in tipos %}
+          <label class="chip">
+            <input type="checkbox" value="{{ tipo.id }}"> {{ tipo.nombre }}
+          </label>
+          {% endfor %}
+        </div>
+
+        <label>Resumen o tópicos estudiados</label>
+        <textarea id="entrada-resumen" rows="3" placeholder="Temas, capítulos, ejercicios…"></textarea>
+
+        <label>Observaciones</label>
+        <textarea id="entrada-observaciones" rows="2" placeholder="¿Cómo te fue? ¿Qué costó?"></textarea>
+
+        <button class="boton boton-dorado" type="submit">Guardar entrada ✅</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ========== ENTRADAS DE HOY ========== -->
+  <section class="zona-hoy">
+    <div class="tarjeta">
+      <h2>📅 Entradas de hoy</h2>
+      {% if entradas_hoy %}
+        {% for e in entradas_hoy %}
+        <div class="entrada-hoy">
+          <div class="entrada-titulo">🎓 {{ e.tematica_nombre }}</div>
+          <div class="entrada-dato"><strong>Tipos:</strong> {{ e.tipos_nombres or '—' }}</div>
+          {% if e.descripcion %}<div class="entrada-dato"><strong>Descripción:</strong> {{ e.descripcion }}</div>{% endif %}
+          {% if e.resumen %}<div class="entrada-dato"><strong>Resumen:</strong> {{ e.resumen }}</div>{% endif %}
+          {% if e.observaciones %}<div class="entrada-dato"><strong>Observaciones:</strong> {{ e.observaciones }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="vacio">Todavía no registraste nada hoy. ¡Tu primera entrada enciende la racha! 🔥</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ========== COMPARTIR EL DÍA ========== -->
+  <section class="zona-compartir">
+    <div class="tarjeta tarjeta-compartir">
+      <h2>📤 Compilar y compartir el día</h2>
+      <p class="ayuda">El sistema arma el resumen de hoy y lo manda por el canal que elijas.</p>
+      <div class="fila-botones">
+        <button class="boton" id="btn-github">🐙 GitHub</button>
+        <button class="boton boton-violeta" id="btn-email">📧 Email</button>
+        <button class="boton boton-verde" id="btn-whatsapp">💬 WhatsApp</button>
+      </div>
+      <pre class="vista-compilado" id="vista-compilado" hidden></pre>
+      <button class="boton boton-suave" id="btn-ver-compilado">👀 Ver compilado</button>
+    </div>
+  </section>
+
+  <!-- Mensajito flotante para avisos -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario de Capacitación — Ingresar</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pantalla-login">
+
+  <div class="tarjeta-login">
+    <!-- Tu logo como panel superior -->
+    <img src="/static/salem-logo.png" alt="Logo SALEM" class="logo-login">
+
+    <h1>Diario de Capacitación</h1>
+    <p class="subtitulo">y Desarrollo Académico</p>
+
+    <!-- Si hubo error de contraseña, Flask nos lo cuenta acá -->
+    {% if error %}
+      <div class="aviso-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+      <label for="username">Usuario</label>
+      <input type="text" id="username" name="username" required autofocus>
+
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password">
+
+      <button type="submit" class="boton">Entrar 🚀</button>
+    </form>
+
+    <p class="nota-dev">Modo desarrollo: todavía sin contraseña 😉</p>
+  </div>
+
+</body>
+</html>
