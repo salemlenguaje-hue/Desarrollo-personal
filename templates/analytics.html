@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario — Análisis y Estadísticas</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Chart.js para los gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- ========== PANEL SUPERIOR ========== -->
+  <header class="header no-print">
+    <img src="/static/salem-logo.png" alt="Logo SALEM">
+    <span class="espacio"></span>
+    <a href="/" class="link-nav">Inicio</a>
+    <a href="/analisis" class="link-nav activo">Análisis 📊</a>
+    <a href="/logout" class="link-nav salir">Salir</a>
+  </header>
+
+  <main class="contenedor-analisis">
+    
+    <!-- Título y Botón de Imprimir -->
+    <div class="cabecera-analisis no-print">
+      <h1>📈 Análisis de Rendimiento</h1>
+      <button class="boton boton-violeta" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+    </div>
+
+    <!-- Tarjetas de Resumen Rápido -->
+    <section class="grid-resumen">
+      <div class="tarjeta tarjeta-mini">
+        <div class="mini-titulo">🔥 RACHA ACTUAL</div>
+        <div class="mini-numero" id="stat-racha">0</div>
+      </div>
+      <div class="tarjeta tarjeta-mini">
+        <div class="mini-titulo">🏆 MEJOR RACHA</div>
+        <div class="mini-numero" id="stat-mejor">0</div>
+      </div>
+      <div class="tarjeta tarjeta-mini">
+        <div class="mini-titulo">⭐ NIVEL</div>
+        <div class="mini-numero" id="stat-nivel">1</div>
+      </div>
+      <div class="tarjeta tarjeta-mini">
+        <div class="mini-titulo">📚 TOTAL ENTRADAS</div>
+        <div class="mini-numero" id="stat-total">0</div>
+      </div>
+    </section>
+
+    <!-- Calendario de Actividad (Estilo GitHub) -->
+    <section class="tarjeta">
+      <h2>📅 Calendario de Actividad (Últimos 365 días)</h2>
+      <p class="ayuda" style="margin-bottom: 10px;">Cada cuadradito es un día. Cuanto más oscuro, más estudiazo.</p>
+      <div class="calendario-wrap">
+        <div class="calendario-grid" id="calendario"></div>
+      </div>
+    </section>
+
+    <!-- Gráficos -->
+    <section class="grid-graficos">
+      <div class="tarjeta">
+        <h2>📈 Evolución (Últimos 30 días)</h2>
+        <canvas id="grafico-linea"></canvas>
+      </div>
+      <div class="tarjeta">
+        <h2>🥧 Foco por Temática</h2>
+        <canvas id="grafico-torta"></canvas>
+      </div>
+      <div class="tarjeta">
+        <h2>🛠️ Métodos de Estudio</h2>
+        <canvas id="grafico-barras"></canvas>
+      </div>
+    </section>
+
+    <!-- Validador de Blockchain -->
+    <section class="tarjeta tarjeta-blockchain no-print">
+      <h2>🔗 Integridad de la Cadena (Blockchain)</h2>
+      <p class="ayuda">Verifica criptográficamente que tu historial no haya sido alterado.</p>
+      <button class="boton boton-dorado" id="btn-validar">🕵️‍♂️ Auditar Cadena</button>
+      <div id="resultado-auditoria" class="vista-compilado" hidden></div>
+    </section>
+
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/analytics.js"></script>
+</body>
+</html>

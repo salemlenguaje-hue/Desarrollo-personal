@@ -474,3 +474,71 @@ def obtener_calendario_actividad():
     # Invertimos para que el día más antiguo vaya primero
     calendario.reverse()
     return calendario
+
+# ==================== VALIDACIÓN DE BLOCKCHAIN ====================
+
+def validar_blockchain():
+    """
+    Revisa toda la cadena de entradas para asegurar que nadie tocó nada.
+    Vuelve a calcular hashes y firmas y las compara con las guardadas.
+    """
+    conn = obtener_conexion()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id, fecha, tematica_id, descripcion, resumen, observaciones, 
+               hash, hash_previo, firma 
+        FROM entradas ORDER BY id ASC
+    ''')
+    entradas = cursor.fetchall()
+    conn.close()
+
+    if not entradas:
+        return {'ok': True, 'mensaje': 'No hay entradas para validar todavía.', 'total': 0, 'validadas': 0}
+
+    clave_secreta = cargar_clave_secreta()
+    hash_previo_esperado = None
+    validadas = 0
+    errores = []
+
+    for entrada in entradas:
+        # 1. Recalcular el hash del contenido (¿alguien cambió el texto?)
+        hash_calc = calcular_hash_entrada(
+            entrada['fecha'], entrada['tematica_id'], 
+            entrada['descripcion'] or '', entrada['resumen'] or '', 
+            entrada['observaciones'] or ''
+        )
+        
+        if hash_calc != entrada['hash']:
+            errores.append(f"Entrada ID {entrada['id']}: El contenido fue modificado.")
+            continue
+
+        # 2. Verificar el eslabón con la entrada anterior (¿se borró una entrada del medio?)
+        if entrada['hash_previo'] != hash_previo_esperado:
+            errores.append(f"Entrada ID {entrada['id']}: La cadena se rompió.")
+            continue
+
+        # 3. Verificar tu firma digital (¿es realmente tu rúbrica?)
+        firma_calc = calcular_firma(hash_calc, clave_secreta)
+        if firma_calc != entrada['firma']:
+            errores.append(f"Entrada ID {entrada['id']}: La firma digital no es válida.")
+            continue
+
+        # Si pasa las 3 pruebas, es válida
+        validadas += 1
+        hash_previo_esperado = entrada['hash']
+
+    if errores:
+        return {
+            'ok': False, 
+            'mensaje': f'⚠️ Alerta: Se encontraron {len(errores)} anomalías en la cadena.', 
+            'errores': errores, 
+            'total': len(entradas), 
+            'validadas': validadas
+        }
+    
+    return {
+        'ok': True, 
+        'mensaje': f'✅ Cadena intacta: {validadas} entradas verificadas con éxito. Nadie tocó nada.', 
+        'total': len(entradas), 
+        'validadas': validadas
+    }

@@ -227,6 +227,13 @@ def subir_a_github():
 
 # ------------------ ARRANQUE ------------------
 
+
+@app.route('/api/validar_blockchain')
+@login_requerido
+def api_validar_blockchain():
+    """Verifica que la cadena de hashes y firmas esté intacta."""
+    return jsonify(logica.validar_blockchain())
+
 if __name__ == '__main__':
     print('🚀 Diario de Capacitación andando:')
     print(f'   👉 En este celu:  http://localhost:{PUERTO}')
