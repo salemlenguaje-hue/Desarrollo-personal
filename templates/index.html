@@ -92,6 +92,9 @@
         <label>Observaciones</label>
         <textarea id="entrada-observaciones" rows="2" placeholder="¿Cómo te fue? ¿Qué costó?"></textarea>
 
+        <label>Minutos dedicados ⏱️</label>
+        <input type="number" id="entrada-minutos" min="1" placeholder="Ej: 45" required>
+
         <button class="boton boton-dorado" type="submit">Guardar entrada ✅</button>
       </form>
     </div>
@@ -105,6 +108,7 @@
         {% for e in entradas_hoy %}
         <div class="entrada-hoy">
           <div class="entrada-titulo">🎓 {{ e.tematica_nombre }}</div>
+          <div class="entrada-dato"><strong>⏱️ Tiempo:</strong> {{ e.minutos }} minutos</div>
           <div class="entrada-dato"><strong>Tipos:</strong> {{ e.tipos_nombres or '—' }}</div>
           {% if e.descripcion %}<div class="entrada-dato"><strong>Descripción:</strong> {{ e.descripcion }}</div>{% endif %}
           {% if e.resumen %}<div class="entrada-dato"><strong>Resumen:</strong> {{ e.resumen }}</div>{% endif %}

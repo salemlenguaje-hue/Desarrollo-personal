@@ -35,8 +35,10 @@ async function inicializar() {
     document.getElementById('stat-nivel').textContent = stats.nivel_actual;
     
     // Calcular total de entradas sumando las de los últimos 30 días
-    const totalEntradas = stats.entradas_por_dia.reduce((sum, dia) => sum + dia.cantidad, 0);
-    document.getElementById('stat-total').textContent = totalEntradas;
+    const totalEntradas = stats.entradas_por_dia.reduce((sum, dia) => sum + (dia.minutos || 0), 0);
+        const horas = Math.floor(totalEntradas / 60);
+    const mins = totalEntradas % 60;
+    document.getElementById('stat-tiempo').textContent = horas + 'h ' + mins + 'm';
 
     // 2. Dibujar Gráfico de Línea (Evolución)
     new Chart(document.getElementById('grafico-linea'), {
@@ -44,8 +46,8 @@ async function inicializar() {
       data: {
         labels: stats.entradas_por_dia.map(d => d.fecha.substring(5)), // Mostrar solo MM-DD
         datasets: [{
-          label: 'Entradas por día',
-          data: stats.entradas_por_dia.map(d => d.cantidad),
+          label: 'Minutos por día',
+          data: stats.entradas_por_dia.map(d => d.minutos),
           borderColor: '#1663A8',
           backgroundColor: 'rgba(22, 99, 168, 0.1)',
           fill: true,
@@ -61,7 +63,7 @@ async function inicializar() {
       data: {
         labels: stats.por_tematica.map(t => t.nombre),
         datasets: [{
-          data: stats.por_tematica.map(t => t.cantidad),
+          data: stats.por_tematica.map(t => t.minutos),
           backgroundColor: COLORES
         }]
       },
@@ -74,8 +76,8 @@ async function inicializar() {
       data: {
         labels: stats.por_tipo.map(t => t.nombre),
         datasets: [{
-          label: 'Usos',
-          data: stats.por_tipo.map(t => t.cantidad),
+          label: 'Minutos',
+          data: stats.por_tipo.map(t => t.minutos),
           backgroundColor: COLORES,
           borderRadius: 8 // Bordes redondeados estilo Duolingo
         }]
@@ -96,6 +98,8 @@ async function inicializar() {
 async function dibujarCalendario() {
   const resp = await fetch('/api/calendario');
   const dias = await resp.json();
+  const totalReal = dias.reduce((sum, d) => sum + d.cantidad, 0);
+  document.getElementById('stat-total').textContent = totalReal;
   const contenedor = document.getElementById('calendario');
   contenedor.innerHTML = '';
   

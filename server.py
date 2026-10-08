@@ -157,7 +157,8 @@ def api_guardar_entrada():
         descripcion=datos.get('descripcion', ''),
         tipos=datos.get('tipos', []),          # lista de IDs de tipos
         resumen=datos.get('resumen', ''),
-        observaciones=datos.get('observaciones', '')
+        observaciones=datos.get('observaciones', ''),
+        minutos=int(datos.get('minutos', 0) or 0)
     )
     return jsonify({'ok': True, 'mensaje': '¡Entrada guardada! La racha ya lo siente 🔥'})
 

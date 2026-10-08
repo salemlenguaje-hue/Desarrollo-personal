@@ -34,13 +34,13 @@ def cargar_clave_secreta():
     with open(ARCHIVO_SECRETO, 'r') as f:
         return f.read().strip()
 
-def calcular_hash_entrada(fecha, tematica_id, descripcion, resumen, observaciones):
+def calcular_hash_entrada(fecha, tematica_id, descripcion, resumen, observaciones, minutos=0):
     """
     Calcula el hash SHA-256 de una entrada.
     Es la "huella digital" única de este contenido.
     """
     # Concatenamos todos los campos en un string
-    contenido = f"{fecha}|{tematica_id}|{descripcion}|{resumen}|{observaciones}"
+    contenido = f"{fecha}|{tematica_id}|{descripcion}|{resumen}|{observaciones}|{minutos}"
     # Calculamos el hash SHA-256
     return hashlib.sha256(contenido.encode('utf-8')).hexdigest()
 
@@ -126,13 +126,13 @@ def obtener_tipos_estudio():
 
 # ==================== GESTIÓN DE ENTRADAS (CON BLOCKCHAIN) ====================
 
-def guardar_entrada(fecha, tematica_id, descripcion, tipos, resumen, observaciones):
+def guardar_entrada(fecha, tematica_id, descripcion, tipos, resumen, observaciones, minutos=0):
     """
     Guarda una nueva entrada de estudio CON BLOCKCHAIN.
     Calcula hash, hash previo y firma automáticamente.
     """
     # Calculamos el hash de esta entrada
-    hash_entrada = calcular_hash_entrada(fecha, tematica_id, descripcion, resumen, observaciones)
+    hash_entrada = calcular_hash_entrada(fecha, tematica_id, descripcion, resumen, observaciones, minutos)
     
     # Obtenemos el hash de la entrada anterior (para encadenar)
     hash_previo = obtener_hash_ultima_entrada()
@@ -146,10 +146,10 @@ def guardar_entrada(fecha, tematica_id, descripcion, tipos, resumen, observacion
     
     # Insertamos la entrada con los campos de blockchain
     cursor.execute('''
-        INSERT INTO entradas (fecha, tematica_id, descripcion, resumen, observaciones,
+        INSERT INTO entradas (fecha, tematica_id, descripcion, resumen, observaciones, minutos,
                               hash, hash_previo, firma)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (fecha, tematica_id, descripcion, resumen, observaciones,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (fecha, tematica_id, descripcion, resumen, observaciones, minutos,
           hash_entrada, hash_previo, firma))
     
     entrada_id = cursor.lastrowid
@@ -319,7 +319,7 @@ def obtener_estadisticas():
     
     # Entradas por día (últimos 30 días)
     cursor.execute('''
-        SELECT fecha, COUNT(*) as cantidad
+        SELECT fecha, COALESCE(SUM(minutos), 0) as minutos
         FROM entradas
         WHERE fecha >= date('now', '-30 days')
         GROUP BY fecha
@@ -329,21 +329,22 @@ def obtener_estadisticas():
     
     # Distribución por temática
     cursor.execute('''
-        SELECT t.nombre, COUNT(e.id) as cantidad
+        SELECT t.nombre, COALESCE(SUM(e.minutos), 0) as minutos
         FROM entradas e
         JOIN tematicas t ON e.tematica_id = t.id
         GROUP BY t.id
-        ORDER BY cantidad DESC
+        ORDER BY minutos DESC
     ''')
     por_tematica = cursor.fetchall()
     
     # Distribución por tipo de estudio
     cursor.execute('''
-        SELECT te.nombre, COUNT(et.entrada_id) as cantidad
+        SELECT te.nombre, COALESCE(SUM(e.minutos), 0) as minutos
         FROM entrada_tipos et
         JOIN tipos_estudio te ON et.tipo_id = te.id
+        JOIN entradas e ON et.entrada_id = e.id
         GROUP BY te.id
-        ORDER BY cantidad DESC
+        ORDER BY minutos DESC
     ''')
     por_tipo = cursor.fetchall()
     
@@ -485,7 +486,7 @@ def validar_blockchain():
     conn = obtener_conexion()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT id, fecha, tematica_id, descripcion, resumen, observaciones, 
+        SELECT id, fecha, tematica_id, descripcion, resumen, observaciones, minutos, 
                hash, hash_previo, firma 
         FROM entradas ORDER BY id ASC
     ''')
@@ -505,7 +506,7 @@ def validar_blockchain():
         hash_calc = calcular_hash_entrada(
             entrada['fecha'], entrada['tematica_id'], 
             entrada['descripcion'] or '', entrada['resumen'] or '', 
-            entrada['observaciones'] or ''
+            entrada['observaciones'] or '', entrada['minutos'] or 0
         )
         
         if hash_calc != entrada['hash']:

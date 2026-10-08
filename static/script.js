@@ -95,7 +95,8 @@ document.getElementById('form-entrada').addEventListener('submit', async (evento
     descripcion: document.getElementById('entrada-descripcion').value.trim(),
     tipos: tipos,
     resumen: document.getElementById('entrada-resumen').value.trim(),
-    observaciones: document.getElementById('entrada-observaciones').value.trim()
+    observaciones: document.getElementById('entrada-observaciones').value.trim(),
+    minutos: parseInt(document.getElementById('entrada-minutos').value) || 0
   };
 
   const respuesta = await fetch('/api/entradas', {
