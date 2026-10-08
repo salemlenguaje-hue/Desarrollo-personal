@@ -203,7 +203,7 @@ def subir_a_github():
     pasos = [
         (['git', 'add', '-A'], 'preparar archivos'),
         (['git', 'commit', '-m', f'Diario: compilado del dia {hoy}'], 'guardar cambio'),
-        (['git', 'push'], 'subir a GitHub'),
+        (['git', 'push', 'origin', 'main'], 'subir a GitHub'),
     ]
 
     for comando, descripcion in pasos:
