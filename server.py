@@ -193,34 +193,32 @@ def api_compilado():
 @app.route('/api/github', methods=['POST'])
 @login_requerido
 def subir_a_github():
-    """
-    Botón mágico 🐙:
-    1) Escribe el compilado del día en compilados/FECHA.md
-    2) Hace git add + commit + push
-    """
     hoy = datetime.now().strftime('%Y-%m-%d')
     compilado = logica.generar_compilado_hoy()
 
-    # Guardamos el compilado como archivo Markdown en el repo
     os.makedirs('compilados', exist_ok=True)
     with open(os.path.join('compilados', f'{hoy}.md'), 'w', encoding='utf-8') as archivo:
         archivo.write(compilado + '\n')
 
-    # Los tres pasos de Git, en orden
     pasos = [
-        (['git', 'add', '-A'], 'preparar los archivos'),
-        (['git', 'commit', '-m', f'Diario: compilado del dia {hoy}'], 'guardar el cambio'),
+        (['git', 'add', '-A'], 'preparar archivos'),
+        (['git', 'commit', '-m', f'Diario: compilado del dia {hoy}'], 'guardar cambio'),
         (['git', 'push'], 'subir a GitHub'),
     ]
 
     for comando, descripcion in pasos:
         resultado = subprocess.run(comando, capture_output=True, text=True)
         salida = (resultado.stdout + resultado.stderr).strip()
-        # Si el commit dice "nothing to commit" no es un error:
-        # significa que ya estaba todo subido.
+        
         if resultado.returncode != 0 and 'nothing to commit' not in salida:
-            return jsonify({'ok': False,
-                            'mensaje': f'Problema al {descripcion}: {salida}'})
+            # IMPRESO EN LA CONSOLA DE TERMUX PARA QUE LO VEAS
+            print(f"\n❌ ERROR GIT AL {descripcion.upper()}:")
+            print(salida)
+            print("-" * 40)
+            
+            # Mensaje corto y claro para la web
+            error_corto = salida.split('\n')[-1] if salida else 'Error desconocido'
+            return jsonify({'ok': False, 'mensaje': f'Error al {descripcion}: {error_corto}'})
 
     return jsonify({'ok': True, 'mensaje': '¡Todo subido a GitHub! 🎉'})
 
