@@ -405,3 +405,76 @@ form label {
 @media (max-width: 700px) {
   .grid-graficos { grid-template-columns: 1fr; }
 }
+
+/* =====================================================
+   EDITOR INTUITIVO DE RESUMEN
+   Botones que escriben Markdown por vos.
+   ===================================================== */
+
+.editor-toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px;
+  background: #F0F6FD;
+  border: 2px solid #D7E3F4;
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+}
+.editor-btn {
+  background: var(--blanco);
+  border: 2px solid #D7E3F4;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--azul-profundo);
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+.editor-btn:hover {
+  background: var(--azul-medio);
+  color: var(--blanco);
+  border-color: var(--azul-medio);
+}
+.editor-btn:active { transform: translateY(1px); }
+.editor-separador {
+  width: 2px;
+  background: #D7E3F4;
+  margin: 0 4px;
+}
+.editor-select {
+  background: var(--blanco);
+  border: 2px solid #D7E3F4;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--azul-profundo);
+}
+.editor-campo {
+  width: 100%;
+  min-height: 120px;
+  padding: 14px;
+  border: 2px solid #D7E3F4;
+  border-radius: 0 0 12px 12px;
+  background: var(--blanco);
+  outline-color: var(--azul-medio);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+.vista-markdown {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: #F7F4FC;
+  border: 2px dashed var(--violeta);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.vista-markdown h4 { color: var(--azul-profundo); margin: 6px 0; }
+.vista-markdown ul, .vista-markdown ol { margin: 6px 0 6px 22px; }
+.vista-markdown strong { color: var(--azul-profundo); }
+.vista-markdown em { color: var(--violeta); }

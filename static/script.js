@@ -153,3 +153,123 @@ document.getElementById('btn-github').addEventListener('click', async () => {
 
 // ---------- ARRANQUE ----------
 pintarRacha();
+
+/* =====================================================
+   EDITOR INTUITIVO DE RESUMEN
+   Los botones no "pintan" el texto: escriben los símbolos
+   de Markdown alrededor de lo que tengas seleccionado.
+   Así tu resumen queda en Markdown puro y portable.
+   ===================================================== */
+
+// Atajo para tomar el campo de resumen
+function campoResumen() {
+  return document.getElementById('entrada-resumen');
+}
+
+// Envuelve la selección con los símbolos que le pases.
+// Ejemplo: envolver('**', '**') convierte "hola" en "**hola**"
+function envolver(antes, despues) {
+  const campo = campoResumen();
+  const inicio = campo.selectionStart;
+  const fin = campo.selectionEnd;
+  const seleccionado = campo.value.slice(inicio, fin) || 'texto';
+
+  campo.value = campo.value.slice(0, inicio) +
+                antes + seleccionado + despues +
+                campo.value.slice(fin);
+
+  // Dejamos seleccionado lo que acabamos de formatear,
+  // para que puedas encadenar botones (negrita + color, etc.)
+  campo.focus();
+  campo.selectionStart = inicio + antes.length;
+  campo.selectionEnd = inicio + antes.length + seleccionado.length;
+}
+
+// Tamaños: un span con tamaño de letra (HTML válido dentro de Markdown)
+function aplicarTamano(valor) {
+  if (!valor) return;
+  envolver('<span style="font-size:' + valor + 'em">', '</span>');
+}
+
+// Colores: un span con color
+function aplicarColor(color) {
+  if (!color) return;
+  envolver('<span style="color:' + color + '">', '</span>');
+}
+
+// Pone un prefijo al inicio de cada línea seleccionada (para listas)
+function prefijarLineas(prefijo) {
+  const campo = campoResumen();
+  const inicio = campo.selectionStart;
+  const fin = campo.selectionEnd;
+  const seleccionado = campo.value.slice(inicio, fin) || 'ítem';
+  const conPrefijo = seleccionado.split('\n')
+    .map(linea => prefijo + linea).join('\n');
+  campo.value = campo.value.slice(0, inicio) + conPrefijo + campo.value.slice(fin);
+  campo.focus();
+}
+
+// Lista numerada: 1. , 2. , 3. …
+function prefijarLineasNumeradas() {
+  const campo = campoResumen();
+  const inicio = campo.selectionStart;
+  const fin = campo.selectionEnd;
+  const seleccionado = campo.value.slice(inicio, fin) || 'ítem';
+  const conNumeros = seleccionado.split('\n')
+    .map((linea, i) => (i + 1) + '. ' + linea).join('\n');
+  campo.value = campo.value.slice(0, inicio) + conNumeros + campo.value.slice(fin);
+  campo.focus();
+}
+
+// ---------- MINI TRADUCTOR DE MARKDOWN A HTML (vista previa) ----------
+function markdownAHtml(md) {
+  // 1) Guardamos en un "bolsillo" las etiquetas que SÍ permitimos
+  const bolsillo = [];
+  let texto = md.replace(
+    /<span style="(font-size:[0-9.]+em|color:#[0-9A-Fa-f]{3,6})">|<\/span>|<u>|<\/u>/gi,
+    etiqueta => { bolsillo.push(etiqueta); return '\u0000' + (bolsillo.length - 1) + '\u0000'; }
+  );
+
+  // 2) Escapamos todo lo demás (seguridad: nada de código ejecutable)
+  texto = texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // 3) Negrita e itálica
+  texto = texto.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  texto = texto.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // 4) Línea por línea: títulos y listas
+  const lineas = texto.split('\n');
+  let html = '';
+  let enLista = '';  // '' | 'ul' | 'ol'
+
+  const cerrarLista = () => { if (enLista) { html += '</' + enLista + '>'; enLista = ''; } };
+
+  for (const linea of lineas) {
+    if (/^- /.test(linea)) {
+      if (enLista !== 'ul') { cerrarLista(); html += '<ul>'; enLista = 'ul'; }
+      html += '<li>' + linea.slice(2) + '</li>';
+    } else if (/^\d+\. /.test(linea)) {
+      if (enLista !== 'ol') { cerrarLista(); html += '<ol>'; enLista = 'ol'; }
+      html += '<li>' + linea.replace(/^\d+\. /, '') + '</li>';
+    } else if (/^# /.test(linea)) {
+      cerrarLista();
+      html += '<h4>' + linea.slice(2) + '</h4>';
+    } else {
+      cerrarLista();
+      html += linea + '<br>';
+    }
+  }
+  cerrarLista();
+
+  // 5) Devolvemos las etiquetas permitidas desde el bolsillo
+  html = html.replace(/\u0000(\d+)\u0000/g, (_, i) => bolsillo[parseInt(i, 10)]);
+  return html;
+}
+
+// Muestra / oculta la vista previa del resumen
+function alternarVistaPrevia() {
+  const vista = document.getElementById('vista-previa-resumen');
+  if (!vista.hidden) { vista.hidden = true; return; }
+  vista.innerHTML = markdownAHtml(campoResumen().value);
+  vista.hidden = false;
+}

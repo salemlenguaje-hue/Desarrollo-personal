@@ -1,0 +1,49 @@
+<!-- =====================================================
+     EDITOR INTUITIVO: botones que escriben Markdown por vos.
+     Se incluye dentro del formulario de nueva entrada.
+     ===================================================== -->
+<div class="editor-toolbar">
+  <!-- Formato básico: envuelven lo que tengas seleccionado -->
+  <button type="button" class="editor-btn" onclick="envolver('**', '**')" title="Negrita"><strong>N</strong></button>
+  <button type="button" class="editor-btn" onclick="envolver('*', '*')" title="Itálica"><em>I</em></button>
+  <button type="button" class="editor-btn" onclick="envolver('<u>', '</u>')" title="Subrayado"><u>S</u></button>
+
+  <div class="editor-separador"></div>
+
+  <!-- Tamaños: agregan un span con tamaño de letra -->
+  <select class="editor-select" title="Tamaño de letra" onchange="aplicarTamano(this.value); this.value='';">
+    <option value="">Tamaño</option>
+    <option value="0.85">Chico</option>
+    <option value="1.25">Grande</option>
+    <option value="1.6">Enorme</option>
+  </select>
+
+  <!-- Colores: agregan un span con color -->
+  <select class="editor-select" title="Color de letra" onchange="aplicarColor(this.value); this.value='';">
+    <option value="">Color</option>
+    <option value="#0B2E59">Azul profundo</option>
+    <option value="#1663A8">Azul medio</option>
+    <option value="#6C4AB6">Violeta</option>
+    <option value="#2FA36B">Verde</option>
+    <option value="#E5484D">Rojo</option>
+    <option value="#F5B301">Dorado</option>
+  </select>
+
+  <div class="editor-separador"></div>
+
+  <!-- Listas: ponen un prefijo al inicio de cada línea seleccionada -->
+  <button type="button" class="editor-btn" onclick="prefijarLineas('- ')" title="Lista con viñetas">• Lista</button>
+  <button type="button" class="editor-btn" onclick="prefijarLineasNumeradas()" title="Lista numerada">1. Lista</button>
+
+  <div class="editor-separador"></div>
+
+  <!-- Vista previa: traduce tu Markdown a formato lindo -->
+  <button type="button" class="editor-btn" onclick="alternarVistaPrevia()" title="Ver cómo queda">👀 Ver cómo queda</button>
+</div>
+
+<!-- El campo de texto de siempre (mismo id, para que el guardado funcione igual) -->
+<textarea id="entrada-resumen" class="editor-campo" rows="5"
+  placeholder="Escribí tu resumen acá… o seleccioná un texto y probá los botones de arriba"></textarea>
+
+<!-- Acá se ve la versión "linda" de tu Markdown -->
+<div id="vista-previa-resumen" class="vista-markdown" hidden></div>
