@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario — Sibeli</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>document.documentElement.dataset.tema = localStorage.getItem('tema') || 'claro';</script>
+</head>
+<body data-usuario="{{ usuario }}">
+
+  <!-- ========== PANEL SUPERIOR ========== -->
+  <header class="header">
+    <img src="/static/salem-logo.png" alt="Logo SALEM">
+    <span class="espacio"></span>
+    <a href="/" class="link-nav">Inicio</a>
+    <a href="/analisis" class="link-nav">Análisis 📊</a>
+    <a href="/tutor" class="link-nav activo">Sibeli ✨</a>
+    <button type="button" class="link-nav boton-tema" id="btn-tema" onclick="alternarTema()" title="Cambiar claro/oscuro">🌙</button>
+    <a href="/logout" class="link-nav salir">Salir</a>
+  </header>
+
+  <!-- ========== ZONA DE CHAT ========== -->
+  <main class="zona-chat">
+    <div class="tarjeta tarjeta-chat">
+
+      <div class="cabecera-chat">
+        <img src="/static/sibeli.png" alt="Sibeli" class="avatar-sibeli">
+        <div style="flex:1;">
+          <div class="chat-titulo">Sibeli · Tutora personal</div>
+          <div class="chat-subtitulo">Conoce tu diario de estudio</div>
+        </div>
+        <!-- Botones de acción -->
+        <div class="acciones-chat">
+          <button type="button" class="boton-icono" onclick="exportarChat()" title="Exportar a Markdown">💾</button>
+          <button type="button" class="boton-icono" onclick="borrarChat()" title="Borrar historial">🗑️</button>
+        </div>
+      </div>
+
+      <!-- Barra de búsqueda -->
+      <div class="barra-busqueda">
+        <input type="text" id="buscar-chat" placeholder="🔍 Buscar en el historial..." oninput="buscarEnChat(this.value)">
+      </div>
+
+      <!-- Selector de profundidad -->
+      <div class="selector-profundidad">
+        <label>Profundidad:</label>
+        <select id="nivel-profundidad">
+          <option value="superficial">🌊 Superficial (rápido y simple)</option>
+          <option value="normal" selected>📚 Normal (equilibrado)</option>
+          <option value="profundo">🔬 Profundo (detallado)</option>
+          <option value="ultra">🧠 Ultra técnico (nivel experto)</option>
+        </select>
+      </div>
+
+      <!-- Acá aparecen los globitos de la charla -->
+      <div class="lienzo-chat" id="lienzo-chat"></div>
+
+      <!-- Sugerencias de seguimiento (aparecen después de cada respuesta) -->
+      <div class="sugerencias-seguimiento" id="sugerencias-seguimiento" hidden>
+        <div class="sugerencias-titulo">💡 Preguntas relacionadas:</div>
+        <div class="sugerencias-botones" id="sugerencias-botones"></div>
+      </div>
+
+      <!-- Atajos mágicos con contexto -->
+      <div class="atajos-chat">
+        <button type="button" class="boton-chip"
+          onclick="enviarAtajo('Explicame con peras y manzanas lo que estudié hoy según mi diario.')">📖 Explicame lo de hoy</button>
+        <button type="button" class="boton-chip"
+          onclick="enviarAtajo('Tomame lección de lo último que estudié, una pregunta por vez.')">🧠 Tomame lección</button>
+        <button type="button" class="boton-chip"
+          onclick="enviarAtajo('Ayudame a resumir en 5 puntos claros mi última entrada de estudio.')">✍️ Resumí conmigo</button>
+      </div>
+
+      <!-- Caja para escribir -->
+      <form class="fila-chat" id="form-chat">
+        <input type="text" id="campo-chat" placeholder="Preguntale a tu tutor…" autocomplete="off" required>
+        <button class="boton" type="submit">➤</button>
+      </form>
+
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/tema.js"></script>
+  <script src="/static/tutor.js"></script>
+</body>
+</html>

@@ -233,7 +233,129 @@ def api_validar_blockchain():
     """Verifica que la cadena de hashes y firmas esté intacta."""
     return jsonify(logica.validar_blockchain())
 
+
+# Aseguramos que exista la tablita de charlas al arrancar
+logica.asegurar_tabla_chats()
+
+@app.route('/tutor')
+@login_requerido
+def tutor():
+    """La página del tutor con IA."""
+    return render_template('tutor.html', usuario=session['usuario'])
+
+@app.route('/api/historial')
+@login_requerido
+def api_historial():
+    """Devuelve la charla completa para pintarla en la página."""
+    return jsonify(logica.obtener_historial_chat())
+
+@app.route('/api/chat', methods=['POST'])
+@login_requerido
+def api_chat():
+    """Recibe tu pregunta, la guarda, consulta a Gemini y guarda la respuesta."""
+    datos = request.get_json()
+    mensaje = (datos.get('mensaje') or '').strip()
+    if not mensaje:
+        return jsonify({'ok': False, 'mensaje': 'El mensaje vino vacío.'})
+
+    try:
+        logica.guardar_chat('usuario', mensaje)
+        profundidad = datos.get('profundidad', 'normal')
+        ok, respuesta = logica.preguntar_gemini(mensaje, profundidad)
+
+        if not ok:
+            return jsonify({'ok': False, 'mensaje': respuesta})
+
+        id_mensaje = logica.guardar_chat('tutor', respuesta)
+        return jsonify({'ok': True, 'respuesta': respuesta, 'id_mensaje': id_mensaje})
+    except Exception as error:
+        # Si algo explota, lo anotamos en la consola y respondemos amable
+        print('❌ Error en /api/chat:', error)
+        return jsonify({'ok': False, 'mensaje': 'Error interno del servidor: ' + str(error)})
+
+
+@app.route('/api/chat/buscar')
+@login_requerido
+def api_buscar_chat():
+    """Busca mensajes en el historial del chat."""
+    texto = request.args.get('q', '').strip()
+    if not texto:
+        return jsonify([])
+    return jsonify(logica.buscar_en_chat(texto))
+
+@app.route('/api/chat/borrar', methods=['POST'])
+@login_requerido
+def api_borrar_chat():
+    """Borra todo el historial del chat."""
+    logica.borrar_historial_chat()
+    return jsonify({'ok': True, 'mensaje': 'Historial borrado'})
+
+@app.route('/api/chat/favorito/<int:id_mensaje>', methods=['POST'])
+@login_requerido
+def api_favorito(id_mensaje):
+    """Marca o desmarca un mensaje como favorito."""
+    datos = request.get_json()
+    es_favorito = datos.get('favorito', False)
+    logica.marcar_favorito(id_mensaje, es_favorito)
+    return jsonify({'ok': True})
+
+@app.route('/api/chat/exportar')
+@login_requerido
+def api_exportar_chat():
+    """Devuelve el chat en formato Markdown para descargar."""
+    md = logica.exportar_chat_markdown()
+    return jsonify({'markdown': md})
+
+@app.route('/api/chat/sugerencias')
+@login_requerido
+def api_sugerencias():
+    """Devuelve sugerencias de preguntas de seguimiento."""
+    return jsonify(logica.generar_sugerencias_seguimiento(''))
+
+
+# ==================== TROFEOS ====================
+
+@app.route('/api/trofeos')
+@login_requerido
+def api_trofeos():
+    """Devuelve la vitrina de medallas con sus desbloqueos."""
+    return jsonify(logica.obtener_trofeos())
+
+# ==================== VIGILANTE DE LA RACHA ====================
+import threading
+
+HORA_RECORDATORIO = 20  # la hora en que suena la alarma si no estudiaste
+
+def vigilante_de_racha():
+    """
+    Hilito que vive con el servidor: todos los días a la HORA_RECORDATORIO
+    fija si hoy registraste alguna entrada. Si no, te manda una
+    notificación al celular con termux-notification.
+    """
+    import subprocess
+    import time as _time
+    avisado_el = ''
+    while True:
+        ahora = datetime.now()
+        dia = ahora.strftime('%Y-%m-%d')
+        if ahora.hour == HORA_RECORDATORIO and avisado_el != dia:
+            avisado_el = dia  # marcamos el día aunque falle, para no spamear
+            try:
+                if not logica.obtener_entradas_hoy():
+                    subprocess.run([
+                        'termux-notification',
+                        '--title', '🔥 ¡Tu racha está en peligro!',
+                        '--content', 'Hoy no registraste ninguna sesión. Con 5 minutos la mantenés viva.',
+                        '--priority', 'high',
+                    ], timeout=15)
+                    print('🔔 Aviso de racha enviado')
+            except Exception as error:
+                print('⚠️ No pude notificar (¿Termux:API instalado?):', error)
+        _time.sleep(30)  # dormita medio minuto y vuelve a mirar el reloj
+
 if __name__ == '__main__':
+    threading.Thread(target=vigilante_de_racha, daemon=True).start()
+    print(f'🔔 Vigilante de racha activo (avisa a las {HORA_RECORDATORIO}:00)')
     print('🚀 Diario de Capacitación andando:')
     print(f'   👉 En este celu:  http://localhost:{PUERTO}')
     print(f'   👉 En tu WiFi:    http://{ip_local()}:{PUERTO}')

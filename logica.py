@@ -543,3 +543,328 @@ def validar_blockchain():
         'total': len(entradas), 
         'validadas': validadas
     }
+
+# ==================== TUTOR IA: SIBELI ====================
+
+import requests  # la librería que manda pedidos por internet
+import time      # pausas de reintento cuando Gemini está saturado
+
+ARCHIVO_CLAVE_GEMINI = '.gemini_key'
+# Si algún día un modelo se jubila, agregá el nuevo acá arriba de todo
+MODELOS_GEMINI = ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.5-flash', 'gemini-2.5-pro']
+
+def cargar_clave_gemini():
+    """Lee tu llave secreta de Gemini."""
+    if not os.path.exists(ARCHIVO_CLAVE_GEMINI):
+        return None
+    with open(ARCHIVO_CLAVE_GEMINI, 'r') as f:
+        return f.read().strip()
+
+def asegurar_tabla_chats():
+    """Crea la tablita de charlas si no existe (separada de la blockchain)."""
+    conn = obtener_conexion()
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS chats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rol TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def guardar_chat(rol, mensaje):
+    """Guarda un mensaje de la charla (rol: 'usuario' o 'tutor').
+    Devuelve el ID del mensaje recién guardado (para los botones del chat)."""
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('INSERT INTO chats (rol, mensaje) VALUES (?, ?)', (rol, mensaje))
+    nuevo_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return nuevo_id
+
+def obtener_historial_chat():
+    """Devuelve toda la charla en orden, con ID y favorito, para pintarla."""
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    # Si la columna favorito todavía no existe, la creamos al vuelo
+    try:
+        cur.execute('ALTER TABLE chats ADD COLUMN favorito INTEGER DEFAULT 0')
+        conn.commit()
+    except Exception:
+        pass  # ya existía, seguimos de largo
+    cur.execute('SELECT id, rol, mensaje, favorito FROM chats ORDER BY id ASC')
+    filas = cur.fetchall()
+    conn.close()
+    return [dict(f) for f in filas]
+
+def construir_contexto():
+    """
+    EL SUPERPODER: arma un resumen de TU diario (racha, temáticas y
+    entradas de la última semana) para que el tutor responda con tu material.
+    """
+    config = obtener_configuracion()
+    tematicas = [t['nombre'] for t in obtener_tematicas()]
+
+    desde = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    hasta = datetime.now().strftime('%Y-%m-%d')
+    entradas = obtener_entradas_por_rango(desde, hasta)[:15]  # tope para no marear al cerebro
+
+    lineas = []
+    for e in entradas:
+        lineas.append(
+            f"- {e['fecha']} | {e['tematica_nombre']} | Tipos: {e['tipos_nombres']} | "
+            f"Resumen: {e['resumen'] or '-'} | Obs: {e['observaciones'] or '-'}"
+        )
+
+    return (
+        f"Racha actual: {config.get('racha_actual', 0)} días. Nivel: {config.get('nivel_actual', 1)}.\n"
+        f"Temáticas activas: {', '.join(tematicas) or 'ninguna'}.\n"
+        "Entradas de los últimos 7 días:\n" +
+        (chr(10).join(lineas) or '(sin entradas recientes)')
+    )
+
+def preguntar_gemini(mensaje_usuario, profundidad='normal'):
+    """
+    Manda la pregunta al cerebro de Sibeli (servicio Gemini por debajo)
+    y devuelve (ok, respuesta).
+    Le pasamos los últimos mensajes de la charla para que haya conversación.
+    """
+    clave = cargar_clave_gemini()
+    if not clave:
+        return False, 'Falta la clave de Sibeli: guardala en el archivo .gemini_key'
+
+    # Armamos la conversación previa (últimos 10 mensajes)
+    historial = obtener_historial_chat()[-10:]
+    contents = []
+    for h in historial:
+        rol = 'user' if h['rol'] == 'usuario' else 'model'
+        # Gemini exige turnos alternados: si se repite el rol, juntamos los mensajes
+        if contents and contents[-1]['role'] == rol:
+            contents[-1]['parts'][0]['text'] += '\n' + h['mensaje']
+        else:
+            contents.append({'role': rol, 'parts': [{'text': h['mensaje']}]})
+    if contents and contents[0]['role'] != 'user':
+        contents.pop(0)  # la charla debe empezar con vos
+
+    # Sumamos tu pregunta de ahora
+    if contents and contents[-1]['role'] == 'user':
+        contents[-1]['parts'][0]['text'] += '\n' + mensaje_usuario
+    else:
+        contents.append({'role': 'user', 'parts': [{'text': mensaje_usuario}]})
+
+    # Las instrucciones de quién es el tutor (con tu diario adentro)
+    # Ajustamos el tono según la profundidad elegida
+    # Usamos el parámetro que ya recibimos
+    
+    tonos = {
+        'superficial': 'Ofrecé una síntesis ejecutiva: dos o tres oraciones precisas, sin rodeos. ',
+        'normal': 'Exponé los conceptos con claridad y orden, en lenguaje accesible pero preciso. ',
+        'profundo': 'Desarrollá el tema en profundidad: fundamentos, causas, ejemplos prácticos y conexiones con otros contenidos del diario. ',
+        'ultra': 'Exponé con rigor académico: terminología técnica exacta, formulaciones cuando corresponda y análisis crítico. '
+    }
+
+    sistema = (
+        'Sos Sibeli, la tutora académica personal de Martín. '
+        'Tu registro es profesional, sereno y estimulante: explicás con precisión '
+        'universitaria y calidez humana, sin coloquialismos excesivos ni exclamaciones gratuitas. '
+        'Usás español rioplatense (voseo) con vocabulario cuidado. '
+        'Estructurás las respuestas con títulos y listas cuando aportan claridad. ' +
+        tonos.get(profundidad, tonos['normal']) +
+        'Personalizás cada respuesta con el contexto de su diario de estudio. '
+        'Si te pide que le tomés lección, formulás UNA pregunta por vez y esperás su respuesta. '
+        'Contexto del diario de Martín:\n' + construir_contexto()
+    )
+
+    datos = {'profundidad': profundidad}
+    cuerpo = {
+        'systemInstruction': {'parts': [{'text': sistema}]},
+        'contents': contents,
+    }
+
+    url_base = 'https://generativelanguage.googleapis.com/v1beta/models/'
+    ultimo_error = ''
+    for modelo in MODELOS_GEMINI:
+        # Hasta 2 intentos por modelo: los 503/429 son saturaciones temporarias
+        for intento in range(3):
+            try:
+                r = requests.post(
+                    url_base + modelo + ':generateContent',
+                    headers={'x-goog-api-key': clave, 'Content-Type': 'application/json'},
+                    json=cuerpo,
+                    timeout=60
+                )
+                if r.status_code == 404:   # modelo inexistente: probamos el siguiente
+                    ultimo_error = f'modelo {modelo} no disponible'
+                    break
+                if r.status_code in (429, 503):  # saturado: respiramos y reintentamos
+                    ultimo_error = f'{modelo} saturado (HTTP {r.status_code})'
+                    time.sleep(2 + intento * 2)  # pausa creciente: 2s, 4s, 6s
+                    continue
+                if r.status_code != 200:
+                    return False, f'Sibeli no pudo responder (error {r.status_code}): {r.text[:200]}'
+                datos = r.json()
+                texto = datos['candidates'][0]['content']['parts'][0]['text']
+                return True, texto
+            except Exception as e:
+                ultimo_error = str(e)
+                time.sleep(2)
+
+    return False, ('Sibeli está con mucha demanda ahora mismo (probé todos sus '
+                   'cerebros con reintentos). Último error: {ultimo_error}. '
+                   'Esperá un minutito y tocá 🔄 Reintentar.')
+
+# ==================== MEJORAS DEL TUTOR ====================
+
+def buscar_en_chat(texto_busqueda):
+    """Busca mensajes que contengan el texto (case insensitive)."""
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT id, rol, mensaje, fecha_creacion 
+        FROM chats 
+        WHERE LOWER(mensaje) LIKE LOWER(?)
+        ORDER BY id ASC
+    ''', (f'%{texto_busqueda}%',))
+    resultados = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in resultados]
+
+def borrar_historial_chat():
+    """Borra toda la charla (útil para empezar de nuevo)."""
+    conn = obtener_conexion()
+    conn.execute('DELETE FROM chats')
+    conn.commit()
+    conn.close()
+    return True
+
+def marcar_favorito(id_mensaje, es_favorito):
+    """Marca o desmarca un mensaje como favorito."""
+    conn = obtener_conexion()
+    # Verificamos que la columna existe, si no la creamos
+    try:
+        conn.execute('ALTER TABLE chats ADD COLUMN favorito INTEGER DEFAULT 0')
+        conn.commit()
+    except:
+        pass  # ya existía
+    
+    conn.execute('UPDATE chats SET favorito = ? WHERE id = ?', (1 if es_favorito else 0, id_mensaje))
+    conn.commit()
+    conn.close()
+    return True
+
+def exportar_chat_markdown():
+    """Genera un Markdown con toda la charla."""
+    historial = obtener_historial_chat()
+    if not historial:
+        return "# Chat vacío\n\nNo hay mensajes para exportar."
+    
+    md = "# 💬 Conversación con Sibeli\n\n"
+    md += f"**Usuario:** Martín  \n"
+    md += f"**Fecha de exportación:** {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+    md += "---\n\n"
+    
+    for msg in historial:
+        if msg['rol'] == 'usuario':
+            md += f"## 👤 Martín\n\n{msg['mensaje']}\n\n"
+        else:
+            md += f"## ✨ Sibeli\n\n{msg['mensaje']}\n\n"
+        md += "---\n\n"
+    
+    return md
+
+def generar_sugerencias_seguimiento(ultimo_mensaje_tutor):
+    """
+    Genera 3 preguntas de seguimiento basadas en la última respuesta del tutor.
+    (Esto es un placeholder: en producción usaríamos otro call a Gemini)
+    """
+    # Por ahora devolvemos sugerencias genéricas
+    return [
+        "¿Podés darme un ejemplo práctico?",
+        "¿Cómo se relaciona esto con lo que estudié ayer?",
+        "¿Qué debería estudiar después de esto?"
+    ]
+
+# ==================== TROFEOS Y LOGROS ====================
+
+def asegurar_tabla_trofeos(conn):
+    """Crea la tablita de trofeos desbloqueados si no existe."""
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS trofeos (
+            id_trofeo TEXT PRIMARY KEY,
+            fecha DATE NOT NULL
+        )
+    ''')
+
+def _dato_total(consulta):
+    """Atajo para consultas que devuelven un solo número."""
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    cur.execute(consulta)
+    valor = cur.fetchone()[0]
+    conn.close()
+    return valor or 0
+
+def obtener_trofeos():
+    """
+    La vitrina de medallas: cada trofeo se calcula con datos REALES
+    del diario (rachas, entradas, minutos, temáticas).
+    Los que se desbloquean hoy quedan anotados con fecha y con el
+    sello 'nuevo' para que la página los festeje con un toast.
+    """
+    config = obtener_configuracion()
+    mejor_racha = int(config.get('mejor_racha', 0))
+    total_entradas = _dato_total('SELECT COUNT(*) FROM entradas')
+    total_minutos = _dato_total('SELECT COALESCE(SUM(minutos), 0) FROM entradas')
+    total_tematicas = _dato_total('SELECT COUNT(DISTINCT tematica_id) FROM entradas')
+
+    # (id, emoji, nombre, cómo se gana, condición real)
+    definiciones = [
+        ('primer_paso',  '🌱', 'Primer paso',      'Registraste tu primera sesión de estudio.', total_entradas >= 1),
+        ('racha_7',      '🔥', 'Semana ardiente',  'Llegaste a 7 días de racha.',               mejor_racha >= 7),
+        ('racha_14',     '⚡', 'Quincena',         'Llegaste a 14 días de racha.',              mejor_racha >= 14),
+        ('racha_21',     '🎯', 'Hábito formado',   'Llegaste a 21 días de racha.',              mejor_racha >= 21),
+        ('racha_30',     '🛡️', 'Imparable',        'Llegaste a 30 días de racha.',              mejor_racha >= 30),
+        ('racha_60',     '🔮', 'Visionario',       'Llegaste a 60 días de racha.',              mejor_racha >= 60),
+        ('racha_90',     '👑', 'Realeza',          'Llegaste a 90 días de racha.',              mejor_racha >= 90),
+        ('racha_365',    '♾️', 'Infinito SALEM',   'Llegaste a 365 días de racha.',             mejor_racha >= 365),
+        ('entradas_10',  '📚', 'Coleccionista',    'Registraste 10 entradas de estudio.',       total_entradas >= 10),
+        ('entradas_50',  '🗂️', 'Archivista',       'Registraste 50 entradas de estudio.',       total_entradas >= 50),
+        ('entradas_100', '🏛️', 'Biblioteca viva',  'Registraste 100 entradas de estudio.',      total_entradas >= 100),
+        ('hora_1',       '⏱️', 'Primera hora',     'Acumulaste 60 minutos de estudio.',         total_minutos >= 60),
+        ('horas_10',     '⌛', 'Señor del tiempo', 'Acumulaste 10 horas de estudio.',           total_minutos >= 600),
+        ('horas_50',     '🕰️', 'Maratonista',      'Acumulaste 50 horas de estudio.',           total_minutos >= 3000),
+        ('multitema',    '🎨', 'Renacentista',     'Estudiaste 3 temáticas distintas.',         total_tematicas >= 3),
+    ]
+
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    asegurar_tabla_trofeos(conn)
+    conn.commit()
+    cur.execute('SELECT id_trofeo, fecha FROM trofeos')
+    ya_desbloqueados = {fila['id_trofeo']: fila['fecha'] for fila in cur.fetchall()}
+
+    hoy = datetime.now().strftime('%Y-%m-%d')
+    resultado = []
+    for id_trofeo, emoji, nombre, descripcion, logrado in definiciones:
+        fecha = ya_desbloqueados.get(id_trofeo)
+        nuevo = False
+        if logrado and fecha is None:
+            # ¡Acaba de desbloquearse! Lo anotamos con fecha de hoy
+            fecha = hoy
+            nuevo = True
+            cur.execute('INSERT INTO trofeos (id_trofeo, fecha) VALUES (?, ?)', (id_trofeo, hoy))
+        resultado.append({
+            'id': id_trofeo,
+            'emoji': emoji,
+            'nombre': nombre,
+            'descripcion': descripcion,
+            'desbloqueado': logrado,
+            'fecha': fecha,
+            'nuevo': nuevo,
+        })
+    conn.commit()
+    conn.close()
+    return resultado

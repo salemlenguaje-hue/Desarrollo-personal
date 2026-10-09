@@ -274,3 +274,125 @@ function alternarVistaPrevia() {
   vista.innerHTML = markdownAHtml(campoResumen().value);
   vista.hidden = false;
 }
+
+/* =====================================================
+   VITRINA DE TROFEOS
+   Pinta las medallas (grises si están bloqueadas) y
+   festeja con un toast las que se desbloquean hoy.
+   ===================================================== */
+async function cargarTrofeos() {
+  const vitrina = document.getElementById('vitrina-trofeos');
+  if (!vitrina) return;
+  try {
+    const resp = await fetch('/api/trofeos');
+    if (!resp.ok) return;
+    const trofeos = await resp.json();
+
+    vitrina.innerHTML = '';
+    trofeos.forEach(t => {
+      const celda = document.createElement('div');
+      celda.className = 'trofeo' + (t.desbloqueado ? '' : ' bloqueado');
+      celda.title = t.nombre + ': ' + t.descripcion +
+                    (t.fecha ? ' · Desbloqueado el ' + t.fecha : ' · Aún bloqueado');
+      celda.innerHTML = '<span class="trofeo-emoji">' + t.emoji + '</span>' +
+                        '<span class="trofeo-nombre">' + t.nombre + '</span>';
+      celda.onclick = () => abrirModalTrofeo(t);   // al tocar, se abre la ficha
+      vitrina.appendChild(celda);
+    });
+
+    // Festejo: toast + lluvia de confeti para los desbloqueados hoy
+    const nuevos = trofeos.filter(t => t.nuevo);
+    if (nuevos.length) {
+      nuevos.forEach(t => avisar('🏆 ¡Trofeo desbloqueado: ' + t.emoji + ' ' + t.nombre + '!'));
+      lluviaDeFestejo();
+    }
+  } catch (error) {
+    console.error('Trofeos no disponibles:', error);
+  }
+}
+cargarTrofeos();
+
+/* =====================================================
+   PANTALLA DE BIENVENIDA (video de presentación)
+   Se muestra una sola vez por sesión del navegador.
+   ===================================================== */
+function cerrarBienvenida() {
+  const capa = document.getElementById('bienvenida');
+  const video = document.getElementById('video-bienvenida');
+  if (!capa) return;
+  if (video) video.pause();
+  capa.classList.add('saliendo');
+  setTimeout(() => {
+    capa.hidden = true;
+    capa.classList.remove('saliendo');
+  }, 400);
+  sessionStorage.setItem('bienvenida_vista', '1');
+}
+
+function iniciarBienvenida() {
+  const capa = document.getElementById('bienvenida');
+  const video = document.getElementById('video-bienvenida');
+  if (!capa || !video) return;
+  if (sessionStorage.getItem('bienvenida_vista')) return;  // ya la viste en esta sesión
+  capa.hidden = false;
+  video.muted = true;                // los navegadores solo dejan autoplay sin sonido
+  video.play().catch(() => {});      // si no puede, queda como cartel
+  video.addEventListener('ended', cerrarBienvenida);
+}
+
+/* =====================================================
+   FICHA DE TROFEO: al tocar una medalla se abre un box
+   que explica qué es y cómo se obtiene.
+   ===================================================== */
+function abrirModalTrofeo(t) {
+  document.getElementById('modal-emoji').textContent = t.emoji;
+  document.getElementById('modal-nombre').textContent = t.nombre;
+  document.getElementById('modal-descripcion').textContent =
+    'Cómo se obtiene: ' + t.descripcion;
+  const estado = document.getElementById('modal-estado');
+  if (t.desbloqueado) {
+    estado.textContent = '✅ Desbloqueado el ' + (t.fecha || 'hoy') + '. ¡Bien ganado!';
+    estado.className = 'modal-estado ok';
+  } else {
+    estado.textContent = '🔒 Aún bloqueado. Seguí sumando estudio para ganarlo.';
+    estado.className = 'modal-estado';
+  }
+  document.getElementById('modal-trofeo').hidden = false;
+}
+
+function cerrarModalTrofeo() {
+  document.getElementById('modal-trofeo').hidden = true;
+}
+
+/* =====================================================
+   LLUVIA DE CONFETI para los trofeos nuevos
+   ===================================================== */
+function lluviaDeFestejo() {
+  const emojis = ['🎉', '✨', '🏆', '💛', '💙', '💜'];
+  for (let i = 0; i < 24; i++) {
+    const p = document.createElement('span');
+    p.className = 'confeti';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDelay = (Math.random() * .6) + 's';
+    p.style.fontSize = (14 + Math.random() * 18) + 'px';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2600);
+  }
+}
+
+// ¡Que suene la función de apertura!
+iniciarBienvenida();
+
+/* =====================================================
+   SONIDO DE LA BIENVENIDA
+   Los navegadores solo permiten autoplay SIN sonido.
+   Este botón lo activa con un toque tuyo (gesto permitido).
+   ===================================================== */
+function alternarSonido() {
+  const video = document.getElementById('video-bienvenida');
+  const boton = document.getElementById('btn-sonido');
+  if (!video || !boton) return;
+  video.muted = !video.muted;
+  boton.textContent = video.muted ? '🔊 Sonido' : '🔇 Silenciar';
+}

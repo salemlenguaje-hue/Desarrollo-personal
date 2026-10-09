@@ -26,6 +26,11 @@ function avisar(mensaje) {
 // ---------- CARGAR DATOS Y DIBUJAR TODO ----------
 async function inicializar() {
   try {
+    // En modo oscuro, los gráficos usan tinta clara para poder leerse
+    if (document.documentElement.dataset.tema === 'oscuro' && window.Chart) {
+      Chart.defaults.color = '#B9C7DC';
+      Chart.defaults.borderColor = 'rgba(185, 199, 220, .15)';
+    }
     const resp = await fetch('/api/estadisticas');
     const stats = await resp.json();
 
@@ -101,6 +106,9 @@ async function dibujarCalendario() {
   const totalReal = dias.reduce((sum, d) => sum + d.cantidad, 0);
   document.getElementById('stat-total').textContent = totalReal;
   const contenedor = document.getElementById('calendario');
+  const paleta = document.documentElement.dataset.tema === 'oscuro'
+    ? ['#22304A', '#3A2E57', '#5B4494', '#8A63D2', '#F5B301']
+    : COLORES_CALENDARIO;
   contenedor.innerHTML = '';
   
   // Iteramos los 365 días y creamos un cuadradito para cada uno
@@ -108,7 +116,7 @@ async function dibujarCalendario() {
     const celda = document.createElement('div');
     celda.className = 'dia-cuadrito';
     // El nivel va de 0 a 4, lo usamos para elegir el color
-    celda.style.backgroundColor = COLORES_CALENDARIO[dia.nivel];
+    celda.style.backgroundColor = paleta[dia.nivel];
     celda.title = `${dia.fecha}: ${dia.cantidad} entrada(s)`;
     contenedor.appendChild(celda);
   });

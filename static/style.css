@@ -478,3 +478,509 @@ form label {
 .vista-markdown ul, .vista-markdown ol { margin: 6px 0 6px 22px; }
 .vista-markdown strong { color: var(--azul-profundo); }
 .vista-markdown em { color: var(--violeta); }
+
+/* =====================================================
+   ESTILOS DEL TUTOR IA (globitos de chat)
+   ===================================================== */
+
+.zona-chat { max-width: 800px; margin: 0 auto; padding: 16px; }
+.tarjeta-chat {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  min-height: 420px;
+}
+.cabecera-chat {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 2px solid #E3ECF7;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.avatar-tutor {
+  font-size: 1.8rem;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--violeta), var(--azul-medio));
+  border-radius: 50%;
+}
+.chat-titulo { font-weight: 800; color: var(--azul-profundo); }
+.chat-subtitulo { font-size: .8rem; color: #7A8699; font-weight: 600; }
+
+.lienzo-chat {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px;
+}
+.burbuja {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: .95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;   /* respeta los saltos de línea del tutor */
+}
+.burbuja-tutor {
+  align-self: flex-start;
+  background: #F0F6FD;
+  border: 2px solid #DCE9F8;
+  border-bottom-left-radius: 4px;
+  color: var(--texto);
+}
+.burbuja-usuario {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--azul-medio), var(--violeta));
+  color: var(--blanco);
+  border-bottom-right-radius: 4px;
+}
+.burbuja.pensando { opacity: .6; font-style: italic; }
+
+.atajos-chat { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.boton-chip {
+  border: 2px solid var(--violeta);
+  background: #F7F4FC;
+  color: var(--violeta);
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.boton-chip:active { transform: translateY(1px); }
+
+.fila-chat { display: flex; gap: 8px; }
+.fila-chat input { flex: 1; }
+
+/* =====================================================
+   ESTILOS DE LAS MEJORAS DEL TUTOR
+   ===================================================== */
+
+/* Barra de búsqueda */
+.barra-busqueda {
+  padding: 8px 12px;
+  border-bottom: 2px solid #E3ECF7;
+}
+.barra-busqueda input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #D7E3F4;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+/* Selector de profundidad */
+.selector-profundidad {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #F7F4FC;
+  border-bottom: 2px solid #E3ECF7;
+}
+.selector-profundidad label {
+  font-weight: 700;
+  color: var(--azul-profundo);
+  font-size: 0.9rem;
+}
+.selector-profundidad select {
+  flex: 1;
+  padding: 6px 10px;
+  border: 2px solid #D7E3F4;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Botones de acción en la cabecera */
+.acciones-chat {
+  display: flex;
+  gap: 6px;
+}
+.boton-icono {
+  background: transparent;
+  border: 2px solid #D7E3F4;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+}
+.boton-icono:hover {
+  background: #F0F6FD;
+  border-color: var(--azul-medio);
+}
+
+/* Botones de acción en cada burbuja */
+.burbuja-acciones {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0.6;
+}
+.burbuja:hover .burbuja-acciones {
+  opacity: 1;
+}
+.burbuja-acciones button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.burbuja-acciones button:hover {
+  background: rgba(0,0,0,0.1);
+}
+.burbuja-acciones button.activo {
+  background: var(--dorado);
+}
+
+/* Sugerencias de seguimiento */
+.sugerencias-seguimiento {
+  padding: 10px 12px;
+  background: #F7F4FC;
+  border-top: 2px dashed var(--violeta);
+}
+.sugerencias-titulo {
+  font-weight: 700;
+  color: var(--violeta);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+.sugerencias-botones {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* =====================================================
+   RONDA MOBILE: botones de acción siempre visibles
+   (en pantallas táctiles no existe el hover) y del
+   tamaño de un dedo para no fallar el toque.
+   ===================================================== */
+.burbuja-acciones { opacity: 1 !important; }
+.burbuja-acciones button {
+  min-width: 38px;
+  min-height: 38px;
+  font-size: 1.05rem;
+  padding: 6px;
+  border-radius: 8px;
+}
+.burbuja-acciones button.activo { background: var(--dorado); }
+
+/* =====================================================
+   RONDA MOBILE 3: scroll real y paneles compactos
+   - El chat tiene su propia ventana scrolleable
+   - Sugerencias y atajos se vuelven carruseles horizontales
+   - La página completa también puede scrollear sin drama
+   ===================================================== */
+@media (max-width: 700px) {
+  .tarjeta-chat {
+    height: auto;                          /* que la página fluya natural */
+    min-height: calc(100vh - 120px);
+    min-height: calc(100dvh - 120px);      /* dvh: viewport real del celu */
+  }
+  .lienzo-chat {
+    max-height: 52vh;                      /* ventana de chat siempre visible */
+    min-height: 220px;                     /* nunca aplastada a cero */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;     /* scroll suave con el dedo */
+  }
+  /* Carrusel horizontal de preguntas relacionadas */
+  .sugerencias-botones {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+  }
+  .sugerencias-botones .boton-chip {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+  /* Carrusel horizontal de atajos mágicos */
+  .atajos-chat {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+  }
+  .atajos-chat .boton-chip {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+}
+
+/* =====================================================
+   VITRINA DE TROFEOS (medallas doradas o grises)
+   ===================================================== */
+.zona-trofeos { max-width: 900px; margin: 0 auto; padding: 0 16px 16px; }
+.vitrina-trofeos {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.trofeo {
+  min-width: 92px;
+  text-align: center;
+  background: #FFFBEB;
+  border: 2px solid var(--dorado);
+  border-radius: 14px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 3px 0 #E3C04C;
+}
+.trofeo-emoji { font-size: 1.9rem; }
+.trofeo-nombre { font-size: .72rem; font-weight: 800; color: var(--azul-profundo); }
+.trofeo.bloqueado {
+  border-color: #D7E3F4;
+  background: #F4F7FB;
+  box-shadow: 0 3px 0 #DCE7F5;
+  filter: grayscale(1);
+  opacity: .55;
+}
+
+/* =====================================================
+   ERA SIBELI: bienvenida con video, avatar, ficha de
+   trofeo, confeti y micro-animaciones
+   ===================================================== */
+
+/* --- Pantalla de bienvenida con video --- */
+.bienvenida {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #0B2E59;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .4s ease;
+}
+.bienvenida video { width: 100%; height: 100%; object-fit: contain; }
+.bienvenida.saliendo { opacity: 0; }
+.boton-saltar { position: absolute; bottom: 24px; right: 24px; z-index: 201; }
+
+/* --- Retrato de Sibeli (adiós robot) --- */
+.avatar-sibeli {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--violeta);
+  box-shadow: 0 0 12px rgba(108, 74, 182, .45);
+}
+
+/* --- Ficha de trofeo (modal) --- */
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(11, 46, 89, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-caja {
+  background: var(--blanco);
+  border-radius: 20px;
+  padding: 26px 22px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+  animation: popTrofeo .35s ease;
+}
+.modal-emoji { font-size: 3.4rem; }
+.modal-caja h3 { color: var(--azul-profundo); margin: 6px 0; }
+.modal-caja p { color: var(--texto); font-size: .95rem; line-height: 1.5; }
+.modal-estado { font-weight: 800; margin: 10px 0 14px; color: #7A8699; }
+.modal-estado.ok { color: var(--verde-exito); }
+@keyframes popTrofeo {
+  0%   { transform: scale(.7);  opacity: 0; }
+  70%  { transform: scale(1.05); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* --- Trofeos clickeables --- */
+.trofeo { cursor: pointer; }
+.trofeo:active { transform: scale(.95); }
+
+/* --- Confeti de festejo --- */
+.confeti {
+  position: fixed;
+  top: -40px;
+  z-index: 300;
+  pointer-events: none;
+  animation: caerConfeti 2.2s ease-in forwards;
+}
+@keyframes caerConfeti {
+  to { transform: translateY(110vh) rotate(540deg); opacity: .9; }
+}
+
+/* --- El fuego de la racha late suavecito --- */
+.fuego { animation: latirFuego 1.6s ease-in-out infinite; }
+@keyframes latirFuego {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+
+/* =====================================================
+   REGLA DE ORO: el atributo hidden manda por encima
+   de cualquier display que definan las clases.
+   (Sin esto, el modal de trofeos y la capa de bienvenida
+   quedan "visibles" aunque el HTML diga hidden.)
+   ===================================================== */
+[hidden] { display: none !important; }
+
+/* Video de bienvenida a pantalla completa:
+   recorta las franjas borrosas del archivo y llena el celu */
+.bienvenida video { object-fit: cover; }
+
+/* =====================================================
+   ARREGLOS FINOS:
+   - El input de minutos con el mismo peinado que sus hermanos
+   - Botón de sonido para la bienvenida (esquina inferior izquierda)
+   ===================================================== */
+input[type="number"] {
+  width: 100%;
+  padding: 11px 13px;
+  border: 2px solid #D7E3F4;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  outline-color: var(--azul-medio);
+  background: var(--blanco);
+}
+.boton-sonido {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  z-index: 201;
+}
+
+/* =====================================================
+   REALINEADO DEL MENÚ SUPERIOR
+   - Texto y emoji SIEMPRE en una sola línea (nowrap)
+   - Todos los botones de la misma altura y centrados
+   - Si en un celu muy angosto no caben, el menú se
+     desliza de costado en vez de romperse
+   ===================================================== */
+.header {
+  align-items: center;
+  overflow-x: auto;             /* deslizamiento lateral de emergencia */
+  scrollbar-width: none;        /* sin barra fea en Firefox */
+}
+.header::-webkit-scrollbar { display: none; }  /* ni en Chrome/Android */
+.header img { flex: 0 0 auto; }
+.header .espacio { flex: 1 0 8px; }
+
+.link-nav {
+  display: inline-flex;         /* cajita flexible centrada */
+  align-items: center;
+  white-space: nowrap;          /* el emoji NUNCA baja a otra línea */
+  line-height: 1.2;
+  flex: 0 0 auto;
+  min-height: 42px;             /* misma altura para todos */
+}
+
+/* En celus chicos, apretamos un poco más para que entren todos */
+@media (max-width: 700px) {
+  .header { gap: 8px; padding: 8px 10px; }
+  .header img { height: 34px; }
+  .link-nav { padding: 7px 9px; font-size: .85rem; }
+}
+
+/* =====================================================
+   MODO OSCURO — "NOCHE SALEM"
+   Se activa con html[data-tema="oscuro"] desde tema.js
+   ===================================================== */
+html[data-tema="oscuro"] body { background: #0E1626; color: #E6EDF7; }
+
+html[data-tema="oscuro"] .header { background: #121E33; border-bottom-color: #24344F; }
+html[data-tema="oscuro"] .link-nav { color: #9CC3F5; }
+html[data-tema="oscuro"] .link-nav.activo { background: #1B2A44; color: #E6EDF7; }
+html[data-tema="oscuro"] .link-nav.salir { color: #FF7B81; }
+
+html[data-tema="oscuro"] .tarjeta { background: #16233A; border-color: #24344F; box-shadow: 0 3px 0 #0A1220; }
+html[data-tema="oscuro"] .tarjeta h2,
+html[data-tema="oscuro"] .mini-numero,
+html[data-tema="oscuro"] .chat-titulo,
+html[data-tema="oscuro"] form label,
+html[data-tema="oscuro"] .selector-profundidad label { color: #CFE0F7; }
+html[data-tema="oscuro"] .mini-titulo { color: #9CC3F5; }
+html[data-tema="oscuro"] .mini-detalle,
+html[data-tema="oscuro"] .ayuda,
+html[data-tema="oscuro"] .vacio,
+html[data-tema="oscuro"] .chat-subtitulo,
+html[data-tema="oscuro"] .nota-dev { color: #8FA3BF; }
+
+html[data-tema="oscuro"] input[type="text"],
+html[data-tema="oscuro"] input[type="number"],
+html[data-tema="oscuro"] input[type="password"],
+html[data-tema="oscuro"] select,
+html[data-tema="oscuro"] textarea { background: #101A2C; border-color: #2A3B57; color: #E6EDF7; }
+html[data-tema="oscuro"] ::placeholder { color: #6C7F9C; }
+
+html[data-tema="oscuro"] .lista-tematicas li,
+html[data-tema="oscuro"] .chip,
+html[data-tema="oscuro"] .burbuja-tutor,
+html[data-tema="oscuro"] .editor-toolbar { background: #101A2C; border-color: #2A3B57; color: #E6EDF7; }
+html[data-tema="oscuro"] .editor-btn,
+html[data-tema="oscuro"] .editor-select { background: #16233A; border-color: #2A3B57; color: #CFE0F7; }
+html[data-tema="oscuro"] .editor-campo { background: #101A2C; border-color: #2A3B57; color: #E6EDF7; }
+html[data-tema="oscuro"] .entrada-hoy { background: #1B2440; }
+html[data-tema="oscuro"] .entrada-dato { color: #C4D2E6; }
+html[data-tema="oscuro"] .vista-markdown { background: #1B2440; border-color: #6C4AB6; color: #E6EDF7; }
+html[data-tema="oscuro"] .vista-markdown strong { color: #CFE0F7; }
+html[data-tema="oscuro"] .vista-markdown em { color: #C9B4F5; }
+html[data-tema="oscuro"] .selector-profundidad { background: #1B2440; border-bottom-color: #24344F; }
+html[data-tema="oscuro"] .sugerencias-seguimiento { background: #1B2440; border-top-color: #6C4AB6; }
+html[data-tema="oscuro"] .boton-chip { background: #1B2440; border-color: #6C4AB6; color: #C9B4F5; }
+html[data-tema="oscuro"] .cabecera-chat { border-bottom-color: #24344F; }
+html[data-tema="oscuro"] .modal-caja { background: #16233A; }
+html[data-tema="oscuro"] .modal-caja h3 { color: #CFE0F7; }
+html[data-tema="oscuro"] .modal-caja p { color: #C4D2E6; }
+html[data-tema="oscuro"] .trofeo { background: #241F0E; border-color: #B8860B; box-shadow: 0 3px 0 #6B4E00; }
+html[data-tema="oscuro"] .trofeo-nombre { color: #F5D78E; }
+html[data-tema="oscuro"] .trofeo.bloqueado { background: #101A2C; border-color: #2A3B57; box-shadow: 0 3px 0 #0A1220; }
+html[data-tema="oscuro"] .tarjeta-login { background: #16233A; }
+html[data-tema="oscuro"] .tarjeta-login h1,
+html[data-tema="oscuro"] .tarjeta-login label { color: #CFE0F7; }
+html[data-tema="oscuro"] .subtitulo { color: #9CC3F5; }
+html[data-tema="oscuro"] .boton-suave { background: transparent; color: #9CC3F5; border-color: #9CC3F5; }
+html[data-tema="oscuro"] .burbuja-acciones button:hover { background: rgba(255, 255, 255, .12); }
+
+/* Sombritas 3D de los botones, versión nocturna */
+html[data-tema="oscuro"] .boton { box-shadow: 0 4px 0 #06101E; }
+html[data-tema="oscuro"] .boton-dorado { box-shadow: 0 4px 0 #6B4E00; }
+html[data-tema="oscuro"] .boton-violeta { box-shadow: 0 4px 0 #2A1B52; }
+html[data-tema="oscuro"] .boton-verde { box-shadow: 0 4px 0 #0B4A2C; }
+
+/* El botoncito de tema (es un <button>, heredá tipografía del menú) */
+.boton-tema {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Al imprimir, SIEMPRE modo papel (aunque estés en noche) */
+@media print {
+  html[data-tema="oscuro"] body { background: #fff !important; color: #000 !important; }
+  html[data-tema="oscuro"] .tarjeta { background: #fff !important; border-color: #ccc !important; box-shadow: none !important; }
+  html[data-tema="oscuro"] .tarjeta h2,
+  html[data-tema="oscuro"] .mini-numero,
+  html[data-tema="oscuro"] .entrada-dato { color: #000 !important; }
+}

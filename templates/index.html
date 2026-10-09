@@ -5,10 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Diario de Capacitación — Inicio</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script>document.documentElement.dataset.tema = localStorage.getItem('tema') || 'claro';</script>
 </head>
 <!-- El servidor nos deja la racha escrita acá para que el JavaScript la lea -->
 <body data-racha="{{ config.get('racha_actual', '0') }}"
       data-mejor="{{ config.get('mejor_racha', '0') }}">
+
+  <!-- ========== PANTALLA DE BIENVENIDA (video) ========== -->
+  <div class="bienvenida" id="bienvenida" hidden>
+    <video id="video-bienvenida" src="/static/sibeli-intro.mp4" playsinline></video>
+    <button type="button" class="boton boton-violeta boton-sonido" id="btn-sonido" onclick="alternarSonido()">🔊 Sonido</button>
+    <button type="button" class="boton boton-dorado boton-saltar" onclick="cerrarBienvenida()">Saltar ▸</button>
+  </div>
+
 
   <!-- ========== PANEL SUPERIOR CON TU LOGO ========== -->
   <header class="header">
@@ -16,6 +25,8 @@
     <span class="espacio"></span>
     <a href="/" class="link-nav activo">Inicio</a>
     <a href="/analisis" class="link-nav">Análisis 📊</a>
+    <a href="/tutor" class="link-nav">Sibeli ✨</a>
+    <button type="button" class="link-nav boton-tema" id="btn-tema" onclick="alternarTema()" title="Cambiar claro/oscuro">🌙</button>
     <a href="/logout" class="link-nav salir">Salir</a>
   </header>
 
@@ -40,6 +51,14 @@
       <div class="mini-titulo">👤 SESIÓN</div>
       <div class="mini-numero chico">{{ usuario }}</div>
       <div class="mini-detalle">hoy: {{ entradas_hoy|length }} entrada(s)</div>
+    </div>
+  </section>
+
+  <!-- ========== VITRINA DE TROFEOS ========== -->
+  <section class="zona-trofeos">
+    <div class="tarjeta">
+      <h2>🏆 Trofeos</h2>
+      <div class="vitrina-trofeos" id="vitrina-trofeos"></div>
     </div>
   </section>
 
@@ -137,8 +156,20 @@
   </section>
 
   <!-- Mensajito flotante para avisos -->
+  <!-- ========== FICHA DE TROFEO (modal) ========== -->
+  <div class="modal-fondo" id="modal-trofeo" hidden onclick="if (event.target === this) cerrarModalTrofeo()">
+    <div class="modal-caja">
+      <div class="modal-emoji" id="modal-emoji">🏆</div>
+      <h3 id="modal-nombre">Trofeo</h3>
+      <p id="modal-descripcion">…</p>
+      <p class="modal-estado" id="modal-estado">…</p>
+      <button type="button" class="boton" onclick="cerrarModalTrofeo()">Cerrar</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
+  <script src="/static/tema.js"></script>
   <script src="/static/script.js"></script>
 </body>
 </html>

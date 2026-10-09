@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Diario — Análisis y Estadísticas</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script>document.documentElement.dataset.tema = localStorage.getItem('tema') || 'claro';</script>
   <!-- Chart.js para los gráficos -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -16,6 +17,8 @@
     <span class="espacio"></span>
     <a href="/" class="link-nav">Inicio</a>
     <a href="/analisis" class="link-nav activo">Análisis 📊</a>
+    <a href="/tutor" class="link-nav">Sibeli ✨</a>
+    <button type="button" class="link-nav boton-tema" id="btn-tema" onclick="alternarTema()" title="Cambiar claro/oscuro">🌙</button>
     <a href="/logout" class="link-nav salir">Salir</a>
   </header>
 
@@ -87,6 +90,7 @@
   </main>
 
   <div class="toast" id="toast"></div>
+  <script src="/static/tema.js"></script>
   <script src="/static/analytics.js"></script>
 </body>
 </html>
