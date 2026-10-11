@@ -173,8 +173,10 @@ def api_entradas_hoy():
 @app.route('/api/estadisticas')
 @login_requerido
 def api_estadisticas():
-    """Todos los números para los gráficos."""
-    return jsonify(logica.obtener_estadisticas())
+    """Números para los gráficos, filtrados por período si vienen fechas."""
+    desde = request.args.get('desde')
+    hasta = request.args.get('hasta')
+    return jsonify(logica.obtener_estadisticas(desde, hasta))
 
 
 @app.route('/api/calendario')

@@ -30,6 +30,28 @@
       <button class="boton boton-violeta" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
     </div>
 
+    <!-- Filtro de período -->
+    <div class="tarjeta barra-periodo">
+      <div class="no-print">
+        <div class="chips-periodo" id="chips-periodo">
+          <button type="button" class="boton-chip" data-modo="racha">🔥 Racha actual</button>
+          <button type="button" class="boton-chip" data-modo="7">7 días</button>
+          <button type="button" class="boton-chip chip-activo" data-modo="30">30 días</button>
+          <button type="button" class="boton-chip" data-modo="mes">Este mes</button>
+          <button type="button" class="boton-chip" data-modo="todo">Todo</button>
+          <button type="button" class="boton-chip" data-modo="custom">📅 Personalizado</button>
+        </div>
+        <div class="fila-fechas" id="fila-fechas" hidden>
+          <label for="fecha-desde">Desde</label>
+          <input type="date" id="fecha-desde">
+          <label for="fecha-hasta">Hasta</label>
+          <input type="date" id="fecha-hasta">
+          <button type="button" class="boton" onclick="aplicarPeriodoCustom()">Aplicar</button>
+        </div>
+      </div>
+      <div class="etiqueta-periodo" id="etiqueta-periodo"></div>
+    </div>
+
     <!-- Tarjetas de Resumen Rápido -->
     <section class="grid-resumen">
       <div class="tarjeta tarjeta-mini">
@@ -51,6 +73,10 @@
       <div class="tarjeta tarjeta-mini">
         <div class="mini-titulo">⏱️ TIEMPO TOTAL</div>
         <div class="mini-numero" id="stat-tiempo">0h</div>
+      </div>
+      <div class="tarjeta tarjeta-mini">
+        <div class="mini-titulo">🔥 TIEMPO EN RACHA</div>
+        <div class="mini-numero" id="stat-tiempo-racha">0h</div>
       </div>
     </section>
 

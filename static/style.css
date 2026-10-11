@@ -984,3 +984,43 @@ html[data-tema="oscuro"] .boton-verde { box-shadow: 0 4px 0 #0B4A2C; }
   html[data-tema="oscuro"] .mini-numero,
   html[data-tema="oscuro"] .entrada-dato { color: #000 !important; }
 }
+
+/* =====================================================
+   BARRA DE PERÍODOS DEL ANÁLISIS
+   ===================================================== */
+.barra-periodo { padding: 12px 14px; }
+.chips-periodo { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip-activo {
+  background: var(--violeta);
+  border-color: var(--violeta);
+  color: var(--blanco);
+}
+.fila-fechas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.fila-fechas label { font-weight: 700; color: var(--azul-profundo); margin: 0; }
+.fila-fechas input[type="date"] {
+  padding: 8px 10px;
+  border: 2px solid #D7E3F4;
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--texto);
+  font-family: inherit;
+}
+.etiqueta-periodo {
+  margin-top: 10px;
+  font-weight: 800;
+  color: var(--azul-medio);
+  font-size: .9rem;
+}
+html[data-tema="oscuro"] .fila-fechas label { color: #CFE0F7; }
+html[data-tema="oscuro"] .fila-fechas input[type="date"] {
+  background: #101A2C;
+  border-color: #2A3B57;
+  color: #E6EDF7;
+}
+html[data-tema="oscuro"] .etiqueta-periodo { color: #9CC3F5; }

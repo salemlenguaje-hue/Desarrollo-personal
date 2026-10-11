@@ -309,46 +309,51 @@ def actualizar_racha():
     actualizar_configuracion('dias_descanso_usados', str(dias_descanso))
     actualizar_configuracion('nivel_actual', str(nivel))
 
-def obtener_estadisticas():
+def obtener_estadisticas(fecha_inicio=None, fecha_fin=None):
     """
     Devuelve estadísticas completas para la página de análisis.
+    Sin fechas: últimos 30 días (comportamiento clásico).
+    Con fechas: todo el reporte se filtra por ese período.
     """
     conn = obtener_conexion()
     cursor = conn.cursor()
     config = obtener_configuracion()
-    
-    # Entradas por día (últimos 30 días)
+
+    if not fecha_inicio:
+        fecha_inicio = (datetime.now() - timedelta(days=29)).strftime('%Y-%m-%d')
+    if not fecha_fin:
+        fecha_fin = datetime.now().strftime('%Y-%m-%d')
+
     cursor.execute('''
         SELECT fecha, COALESCE(SUM(minutos), 0) as minutos
         FROM entradas
-        WHERE fecha >= date('now', '-30 days')
+        WHERE fecha BETWEEN ? AND ?
         GROUP BY fecha
         ORDER BY fecha
-    ''')
+    ''', (fecha_inicio, fecha_fin))
     entradas_por_dia = cursor.fetchall()
-    
-    # Distribución por temática
+
     cursor.execute('''
         SELECT t.nombre, COALESCE(SUM(e.minutos), 0) as minutos
         FROM entradas e
         JOIN tematicas t ON e.tematica_id = t.id
+        WHERE e.fecha BETWEEN ? AND ?
         GROUP BY t.id
         ORDER BY minutos DESC
-    ''')
+    ''', (fecha_inicio, fecha_fin))
     por_tematica = cursor.fetchall()
-    
-    # Distribución por tipo de estudio
+
     cursor.execute('''
         SELECT te.nombre, COALESCE(SUM(e.minutos), 0) as minutos
         FROM entrada_tipos et
         JOIN tipos_estudio te ON et.tipo_id = te.id
         JOIN entradas e ON et.entrada_id = e.id
+        WHERE e.fecha BETWEEN ? AND ?
         GROUP BY te.id
         ORDER BY minutos DESC
-    ''')
+    ''', (fecha_inicio, fecha_fin))
     por_tipo = cursor.fetchall()
-    
-    # Calendario de actividad (últimos 365 días)
+
     cursor.execute('''
         SELECT fecha, COUNT(*) as cantidad
         FROM entradas
@@ -357,18 +362,44 @@ def obtener_estadisticas():
         ORDER BY fecha
     ''')
     calendario = cursor.fetchall()
-    
+
+    # Totales del período elegido
+    cursor.execute('''
+        SELECT COUNT(*) as cantidad, COALESCE(SUM(minutos), 0) as minutos
+        FROM entradas
+        WHERE fecha BETWEEN ? AND ?
+    ''', (fecha_inicio, fecha_fin))
+    totales = cursor.fetchone()
+
+    # Minutos de la racha vigente (fuera del filtro)
+    racha_inicio = obtener_inicio_racha_actual()
+    minutos_racha = 0
+    if racha_inicio:
+        cursor.execute('''
+            SELECT COALESCE(SUM(minutos), 0) as minutos
+            FROM entradas
+            WHERE fecha >= ?
+        ''', (racha_inicio,))
+        minutos_racha = cursor.fetchone()['minutos']
+
     conn.close()
-    
+
     return {
         'racha_actual': int(config.get('racha_actual', 0)),
         'mejor_racha': int(config.get('mejor_racha', 0)),
         'nivel_actual': int(config.get('nivel_actual', 1)),
+        'desde': fecha_inicio,
+        'hasta': fecha_fin,
+        'racha_inicio': racha_inicio,
+        'total_entradas': totales['cantidad'],
+        'minutos_totales': totales['minutos'],
+        'minutos_racha': minutos_racha,
         'entradas_por_dia': [dict(row) for row in entradas_por_dia],
         'por_tematica': [dict(row) for row in por_tematica],
         'por_tipo': [dict(row) for row in por_tipo],
         'calendario': [dict(row) for row in calendario]
     }
+
 
 # ==================== COMPILADO DEL DÍA (CON BLOCKCHAIN) ====================
 
@@ -868,3 +899,28 @@ def obtener_trofeos():
     conn.commit()
     conn.close()
     return resultado
+
+def obtener_inicio_racha_actual():
+    """
+    Devuelve la fecha en que empezó la racha que tenés hoy:
+    camina hacia atrás por tus días con estudio mientras los
+    huecos sean de como mucho 1 día libre (regla del descanso).
+    """
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('SELECT DISTINCT fecha FROM entradas ORDER BY fecha DESC')
+    fechas = [fila['fecha'] for fila in cur.fetchall()]
+    conn.close()
+
+    if not fechas:
+        return None
+
+    inicio = fechas[0]
+    for siguiente in fechas[1:]:
+        hueco = (datetime.strptime(inicio, '%Y-%m-%d') -
+                 datetime.strptime(siguiente, '%Y-%m-%d')).days
+        if hueco <= 2:   # día de por medio = descanso permitido, la racha sigue
+            inicio = siguiente
+        else:
+            break
+    return inicio
