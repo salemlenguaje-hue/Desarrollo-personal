@@ -39,6 +39,7 @@
           </select>
           <button type="button" class="boton-icono" onclick="alternarBusqueda()" title="Buscar en el historial">🔍</button>
           <button type="button" class="boton-icono" onclick="exportarChat()" title="Exportar a Markdown">💾</button>
+          <button type="button" class="boton-icono" onclick="pedirResumenEntrada()" title="Guardar sesión como entrada de estudio">📥</button>
           <button type="button" class="boton-icono" onclick="borrarChat()" title="Borrar historial">🗑️</button>
         </div>
       </div>
@@ -79,6 +80,30 @@
 
     </div>
   </main>
+
+  <!-- Modal: de sesión a entrada -->
+  <div class="modal-fondo" id="modal-entrada" hidden onclick="if (event.target === this) cerrarModalEntrada()">
+    <div class="modal-caja modal-ancho">
+      <h3>📥 Guardar sesión como entrada</h3>
+      <p class="ayuda">Sibeli resumió la charla. Revisá, elegí temática, tipos y minutos, y guardá: la racha y la blockchain hacen el resto.</p>
+      <label>Temática</label>
+      <select id="entrada-tematica-chat"></select>
+      <label>Tipos de estudio</label>
+      <div class="caja-tipos" id="caja-tipos-chat"></div>
+      <label>Minutos dedicados</label>
+      <input type="number" id="entrada-minutos-chat" min="1" value="25">
+      <label>Descripción</label>
+      <input type="text" id="entrada-descripcion-chat">
+      <label>Resumen</label>
+      <textarea id="entrada-resumen-chat" rows="5"></textarea>
+      <label>Observaciones</label>
+      <textarea id="entrada-observaciones-chat" rows="3"></textarea>
+      <div class="fila-botones" style="margin-top:12px;">
+        <button type="button" class="boton boton-dorado" onclick="guardarEntradaDesdeChat()">Guardar entrada ✅</button>
+        <button type="button" class="boton boton-suave" onclick="cerrarModalEntrada()">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <div class="toast" id="toast"></div>
   <script src="/static/tema.js"></script>

@@ -473,6 +473,16 @@ def api_config_sibeli():
         'escritura': config.get('sibeli_escritura', '1') == '1',
     })
 
+
+@app.route('/api/chat/resumen_entrada', methods=['POST'])
+@login_requerido
+def api_resumen_entrada():
+    """Sibeli resume la charla actual en campos de entrada de estudio."""
+    ok, resultado = logica.resumir_charla_para_entrada()
+    if not ok:
+        return jsonify({'ok': False, 'mensaje': resultado})
+    return jsonify({'ok': True, 'campos': resultado})
+
 if __name__ == '__main__':
     threading.Thread(target=vigilante_de_racha, daemon=True).start()
     print(f'🔔 Vigilante de racha activo (avisa a las {HORA_RECORDATORIO}:00)')

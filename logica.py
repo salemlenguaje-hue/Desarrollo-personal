@@ -711,6 +711,9 @@ def preguntar_gemini(mensaje_usuario, profundidad='normal', documentos_adjuntos=
             'incluí en tu respuesta un bloque exacto así:\n'
             '<<<ARCHIVO: nombre.md>>>\ncontenido\n<<<FIN ARCHIVO>>>\n'
             'Para agregar a uno existente: <<<AGREGAR A: nombre.md>>> ... <<<FIN ARCHIVO>>>. '
+            'Para Word usá extensión .docx con Markdown simple dentro del bloque: '
+            '# título, ## subtítulo, ### sección, **negrita**, *itálica*, - viñetas. '
+            'El sistema lo convierte a Word con estilos (Calibri, colores y justificado). '
             'El sistema guardará el archivo y quitará el bloque de la respuesta visible.\n'
         )
 
@@ -1055,7 +1058,7 @@ def sanitizar_nombre(nombre):
     nombre = re.sub(r'[^\w\-. ]', '_', nombre)
     if not nombre:
         return None
-    if os.path.splitext(nombre)[1].lower() not in ('.md', '.txt'):
+    if os.path.splitext(nombre)[1].lower() not in ('.md', '.txt', '.docx', '.py', '.html', '.css', '.json', '.csv'):
         nombre += '.md'
     return nombre
 
@@ -1073,7 +1076,7 @@ def listar_documentos():
         completa = os.path.join(carpeta, nombre)
         if os.path.isfile(completa):
             ext = os.path.splitext(nombre)[1].lower()
-            if ext in ('.txt', '.md', '.pdf'):
+            if ext in ('.txt', '.md', '.pdf', '.docx'):
                 docs.append({
                     'nombre': nombre,
                     'tam_kb': round(os.path.getsize(completa) / 1024, 1),
@@ -1101,8 +1104,10 @@ def leer_documento(nombre):
                 texto = f.read()
         elif ext == '.pdf':
             texto = _extraer_pdf(ruta)
+        elif ext == '.docx':
+            texto = _extraer_docx(ruta)
         else:
-            return False, '', 'Formato no soportado todavía (deuda técnica: Word).'
+            return False, '', 'Formato no soportado.'
     except Exception as error:
         return False, '', f'No pude leer el documento: {error}'
     aviso = ''
@@ -1168,7 +1173,15 @@ def guardar_documento(nombre, contenido, modo='crear'):
     ruta = ruta_permitida(nombre)
     if not ruta:
         return False, 'El nombre queda fuera de la carpeta permitida.'
+    ext = os.path.splitext(ruta)[1].lower()
     try:
+        if ext == '.docx':
+            if modo == 'agregar' and os.path.exists(ruta):
+                ok_prev, prev, _ = leer_documento(nombre)
+                if ok_prev:
+                    contenido = prev + '\n\n' + contenido
+            _escribir_docx(ruta, contenido)
+            return True, ('Agregado a: ' if modo == 'agregar' else 'Guardado: ') + nombre
         if modo == 'agregar' and os.path.exists(ruta):
             with open(ruta, 'a', encoding='utf-8') as f:
                 f.write('\n\n' + contenido)
@@ -1200,3 +1213,156 @@ def extraer_y_guardar_bloques(respuesta):
     limpia = PATRON_BLOQUE.sub(reemplazo, respuesta)
     limpia = re.sub(r'\n{3,}', '\n\n', limpia).strip()
     return limpia, mensajes
+
+# ==================== DE SESIÓN A ENTRADA ====================
+
+def resumir_charla_para_entrada():
+    """
+    Le pide a Sibeli que resuma la charla actual en los tres campos
+    de una entrada de estudio (descripción, resumen, observaciones).
+    Devuelve (ok, diccionario_o_mensaje).
+    """
+    clave = cargar_clave_gemini()
+    if not clave:
+        return False, 'Falta la clave de Sibeli.'
+
+    historial = obtener_historial_chat()[-24:]  # últimas 24 intervenciones
+    if not historial:
+        return False, 'No hay charla para resumir todavía.'
+
+    transcripcion = '\n'.join(
+        ('Martín: ' if m['rol'] == 'usuario' else 'Sibeli: ') + m['mensaje']
+        for m in historial
+    )
+
+    prompt = (
+        'Resumí esta sesión de tutoría como ficha de estudio. '
+        'Respondé SOLO con JSON válido, sin texto alrededor, con este formato:\n'
+        '{"descripcion": "una frase que titule la sesión", '
+        '"resumen": "resumen en Markdown con los temas y conceptos clave", '
+        '"observaciones": "qué quedó claro y qué quedó pendiente o para repasar"}\n\n'
+        'TRANSCRIPCIÓN:\n' + transcripcion
+    )
+    try:
+        r = requests.post(
+            'https://generativelanguage.googleapis.com/v1beta/models/'
+            + MODELOS_GEMINI[0] + ':generateContent',
+            headers={'x-goog-api-key': clave, 'Content-Type': 'application/json'},
+            json={'contents': [{'parts': [{'text': prompt}]}]},
+            timeout=60)
+        if r.status_code != 200:
+            return False, f'Sibeli no pudo resumir (HTTP {r.status_code}).'
+        texto = r.json()['candidates'][0]['content']['parts'][0]['text']
+        inicio, fin = texto.find('{'), texto.rfind('}')
+        if inicio == -1 or fin == -1:
+            return False, 'La respuesta no vino en JSON limpio.'
+        datos = json.loads(texto[inicio:fin + 1])
+        return True, {
+            'descripcion': datos.get('descripcion', ''),
+            'resumen': datos.get('resumen', ''),
+            'observaciones': datos.get('observaciones', ''),
+        }
+    except Exception as error:
+        return False, f'No pude resumir la charla: {error}'
+
+# ==================== WORD (.docx) SIN DEPENDENCIAS ====================
+# Un .docx es un ZIP con XML adentro. Python trae zipfile y un
+# parser XML de fábrica: leemos y escribimos Word sin instalar nada.
+
+def _extraer_docx(ruta):
+    """Saca el texto de un .docx recorriendo sus párrafos XML."""
+    import zipfile
+    import xml.etree.ElementTree as ET
+    NS = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    with zipfile.ZipFile(ruta) as z:
+        xml = z.read('word/document.xml')
+    raiz = ET.fromstring(xml)
+    parrafos = []
+    for p in raiz.iter(NS + 'p'):
+        texto = ''.join(t.text or '' for t in p.iter(NS + 't'))
+        parrafos.append(texto)
+    return '\n'.join(parrafos)
+
+def _escribir_docx(ruta, contenido):
+    """
+    Escribe un .docx con estilos: interpreta Markdown simple
+    (# título, ## subtítulo, ### sección, **negrita**, *itálica*, - viñetas)
+    y lo convierte a OpenXML con Calibri, colores y justificado.
+    Los patrones los aprendimos del generador que escribió Sibeli el 14/10/2026.
+    """
+    import zipfile
+    import re
+    import xml.sax.saxutils as saxutils
+
+    def esc(t):
+        return saxutils.escape(t)
+
+    FUENTE = '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>'
+
+    def runs_de(linea):
+        """Parte la línea en pedazos: negrita, itálica y texto normal."""
+        partes = re.split(r'(\*\*[^*]+\*\*|\*[^*]+\*)', linea)
+        runs = []
+        for parte in partes:
+            if not parte:
+                continue
+            if parte.startswith('**') and parte.endswith('**') and len(parte) > 4:
+                extra, texto = '<w:b/>', esc(parte[2:-2])
+            elif parte.startswith('*') and parte.endswith('*') and len(parte) > 2:
+                extra, texto = '<w:i/>', esc(parte[1:-1])
+            else:
+                extra, texto = '', esc(parte)
+            runs.append(
+                '<w:r><w:rPr>' + extra + FUENTE + '<w:sz w:val="22"/>'
+                '<w:color w:val="262626"/></w:rPr>'
+                '<w:t xml:space="preserve">' + texto + '</w:t></w:r>')
+        return ''.join(runs) or ('<w:r><w:rPr>' + FUENTE + '<w:sz w:val="22"/></w:rPr><w:t/></w:r>')
+
+    body = []
+    for linea in contenido.split('\n'):
+        cruda = linea.rstrip()
+        if not cruda.strip():
+            body.append('<w:p/>')
+        elif cruda.startswith('### '):
+            body.append('<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr>'
+                        '<w:r><w:rPr><w:b/>' + FUENTE + '<w:sz w:val="24"/>'
+                        '<w:color w:val="2E75B6"/></w:rPr><w:t>' + esc(cruda[4:]) + '</w:t></w:r></w:p>')
+        elif cruda.startswith('## '):
+            body.append('<w:p><w:pPr><w:spacing w:before="240" w:after="100"/></w:pPr>'
+                        '<w:r><w:rPr><w:b/>' + FUENTE + '<w:sz w:val="28"/>'
+                        '<w:color w:val="2E75B6"/></w:rPr><w:t>' + esc(cruda[3:]) + '</w:t></w:r></w:p>')
+        elif cruda.startswith('# '):
+            body.append('<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="240" w:after="200"/></w:pPr>'
+                        '<w:r><w:rPr><w:b/>' + FUENTE + '<w:sz w:val="40"/>'
+                        '<w:color w:val="1F4E79"/></w:rPr><w:t>' + esc(cruda[2:]) + '</w:t></w:r></w:p>')
+        elif cruda.startswith('- '):
+            body.append('<w:p><w:pPr><w:ind w:left="480"/><w:spacing w:after="80"/></w:pPr>'
+                        '<w:r><w:rPr>' + FUENTE + '<w:sz w:val="22"/></w:rPr>'
+                        '<w:t xml:space="preserve">• </w:t></w:r>' + runs_de(cruda[2:]) + '</w:p>')
+        else:
+            body.append('<w:p><w:pPr><w:spacing w:after="160" w:line="276" w:lineRule="auto"/>'
+                        '<w:jc w:val="both"/></w:pPr>' + runs_de(cruda) + '</w:p>')
+
+    doc_xml = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        '<w:body>' + ''.join(body) +
+        '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'
+        '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>'
+        '</w:body></w:document>')
+
+    content_types = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        '</Types>')
+
+    rels = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+        '</Relationships>')
+
+    with zipfile.ZipFile(ruta, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('[Content_Types].xml', content_types)
+        z.writestr('_rels/.rels', rels)
+        z.writestr('word/document.xml', doc_xml)

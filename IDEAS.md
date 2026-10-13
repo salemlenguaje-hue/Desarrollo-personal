@@ -6,6 +6,6 @@ un asistente personal que gestiona documentos, tareas y hogar con la misma
 filosofía del Diario: datos locales, integridad criptográfica y cariño.
 Estado: semilla 🌱
 
-##  Deuda técnica: Word en la biblioteca
-Que Sibeli pueda leer (y escribir) .docx directamente.
-Hoy el camino es: convertir a PDF y listo.
+##  Word en la biblioteca — PAGADA el 13/10/2026 ✅
+Sibeli lee y escribe .docx con zipfile y XML puro de Python, sin dependencias.
+Limitación honesta: la escritura genera párrafos simples, sin negritas ni estilos.

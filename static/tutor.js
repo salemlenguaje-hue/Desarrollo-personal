@@ -441,3 +441,72 @@ async function guardarComoDocumento(nombre, contenido) {
   const datos = await resp.json();
   mostrarToast(datos.mensaje);
 }
+
+/* =====================================================
+   DE SESIÓN A ENTRADA: Sibeli resume, vos guardás
+   ===================================================== */
+async function pedirResumenEntrada() {
+  mostrarToast('⏳ Sibeli está resumiendo la sesión…');
+  try {
+    const resp = await fetch('/api/chat/resumen_entrada', { method: 'POST' });
+    const datos = await resp.json();
+    if (!datos.ok) { mostrarToast('😵 ' + datos.mensaje); return; }
+    await prepararModalEntrada(datos.campos);
+    document.getElementById('modal-entrada').hidden = false;
+  } catch (error) {
+    mostrarToast('😵 No pude conectar para resumir.');
+  }
+}
+
+async function prepararModalEntrada(campos) {
+  // Cargamos temáticas y tipos para que elijas
+  const [tem, tip] = await Promise.all([
+    fetch('/api/tematicas').then(r => r.json()),
+    fetch('/api/config/tipos').then(r => r.json())
+  ]);
+  const sel = document.getElementById('entrada-tematica-chat');
+  sel.innerHTML = '';
+  tem.forEach(t => {
+    const op = document.createElement('option');
+    op.value = t.id;
+    op.textContent = t.nombre;
+    sel.appendChild(op);
+  });
+  const caja = document.getElementById('caja-tipos-chat');
+  caja.innerHTML = '';
+  tip.forEach(t => {
+    const lab = document.createElement('label');
+    lab.className = 'chip';
+    lab.innerHTML = '<input type="checkbox" value="' + t.id + '"> ' + t.nombre;
+    caja.appendChild(lab);
+  });
+  document.getElementById('entrada-descripcion-chat').value = campos.descripcion || '';
+  document.getElementById('entrada-resumen-chat').value = campos.resumen || '';
+  document.getElementById('entrada-observaciones-chat').value = campos.observaciones || '';
+}
+
+async function guardarEntradaDesdeChat() {
+  const tipos = [...document.querySelectorAll('#caja-tipos-chat input:checked')]
+    .map(c => parseInt(c.value, 10));
+  if (tipos.length === 0) { mostrarToast('Elegí al menos un tipo de estudio'); return; }
+  const carga = {
+    tematica_id: parseInt(document.getElementById('entrada-tematica-chat').value, 10),
+    descripcion: document.getElementById('entrada-descripcion-chat').value.trim(),
+    tipos: tipos,
+    resumen: document.getElementById('entrada-resumen-chat').value.trim(),
+    observaciones: document.getElementById('entrada-observaciones-chat').value.trim(),
+    minutos: parseInt(document.getElementById('entrada-minutos-chat').value, 10) || 0
+  };
+  const resp = await fetch('/api/entradas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(carga)
+  });
+  const datos = await resp.json();
+  mostrarToast(datos.mensaje);
+  cerrarModalEntrada();
+}
+
+function cerrarModalEntrada() {
+  document.getElementById('modal-entrada').hidden = true;
+}
