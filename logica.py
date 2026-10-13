@@ -924,3 +924,64 @@ def obtener_inicio_racha_actual():
         else:
             break
     return inicio
+
+# ==================== PANEL DE CONFIGURACIÓN ====================
+
+def editar_tematica(id_tematica, nuevo_nombre):
+    """Cambia el nombre de una temática. El ID no cambia, así que la blockchain no se entera."""
+    conn = obtener_conexion()
+    try:
+        conn.execute('UPDATE tematicas SET nombre = ? WHERE id = ?', (nuevo_nombre.strip(), id_tematica))
+        conn.commit()
+        return True, "Temática actualizada con éxito"
+    except sqlite3.IntegrityError:
+        return False, "Ese nombre ya existe"
+    finally:
+        conn.close()
+
+def agregar_tipo(nombre):
+    """Crea un nuevo tipo de estudio."""
+    conn = obtener_conexion()
+    try:
+        conn.execute('INSERT INTO tipos_estudio (nombre) VALUES (?)', (nombre.strip(),))
+        conn.commit()
+        return True, "Tipo de estudio creado"
+    except sqlite3.IntegrityError:
+        return False, "Ese tipo ya existe"
+    finally:
+        conn.close()
+
+def editar_tipo(id_tipo, nuevo_nombre):
+    """Cambia el nombre de un tipo de estudio."""
+    conn = obtener_conexion()
+    try:
+        conn.execute('UPDATE tipos_estudio SET nombre = ? WHERE id = ?', (nuevo_nombre.strip(), id_tipo))
+        conn.commit()
+        return True, "Tipo actualizado"
+    except sqlite3.IntegrityError:
+        return False, "Ese nombre ya existe"
+    finally:
+        conn.close()
+
+def eliminar_tipo(id_tipo):
+    """Borra un tipo de estudio. Primero limpia los lazos con entradas viejas para no dejar huerfanitos."""
+    conn = obtener_conexion()
+    conn.execute('DELETE FROM entrada_tipos WHERE tipo_id = ?', (id_tipo,))
+    conn.execute('DELETE FROM tipos_estudio WHERE id = ?', (id_tipo,))
+    conn.commit()
+    conn.close()
+    return True, "Tipo eliminado"
+
+def obtener_entradas_crudas():
+    """Devuelve todas las entradas con sus hashes para la vista de auditoría (solo lectura)."""
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT e.id, e.fecha, t.nombre as tematica, e.minutos, e.hash, e.hash_previo, e.firma
+        FROM entradas e
+        JOIN tematicas t ON e.tematica_id = t.id
+        ORDER BY e.id DESC
+    ''')
+    filas = cur.fetchall()
+    conn.close()
+    return [dict(f) for f in filas]

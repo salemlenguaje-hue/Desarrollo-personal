@@ -355,6 +355,47 @@ def vigilante_de_racha():
                 print('⚠️ No pude notificar (¿Termux:API instalado?):', error)
         _time.sleep(30)  # dormita medio minuto y vuelve a mirar el reloj
 
+
+# ==================== CONFIGURACIÓN DEL SISTEMA ====================
+
+@app.route('/configuracion')
+@login_requerido
+def configuracion():
+    """Página de administración de tablas."""
+    return render_template('configuracion.html', usuario=session['usuario'])
+
+@app.route('/api/config/tipos', methods=['GET', 'POST'])
+@login_requerido
+def api_tipos():
+    if request.method == 'POST':
+        datos = request.get_json()
+        ok, msg = logica.agregar_tipo(datos.get('nombre', ''))
+        return jsonify({'ok': ok, 'mensaje': msg})
+    return jsonify(logica.obtener_tipos_estudio())
+
+@app.route('/api/config/tipos/<int:id_tipo>', methods=['PUT', 'DELETE'])
+@login_requerido
+def api_tipos_accion(id_tipo):
+    if request.method == 'DELETE':
+        logica.eliminar_tipo(id_tipo)
+        return jsonify({'ok': True, 'mensaje': 'Tipo eliminado'})
+    datos = request.get_json()
+    ok, msg = logica.editar_tipo(id_tipo, datos.get('nombre', ''))
+    return jsonify({'ok': ok, 'mensaje': msg})
+
+@app.route('/api/config/tematicas/<int:id_tematica>', methods=['PUT'])
+@login_requerido
+def api_editar_tematica(id_tematica):
+    datos = request.get_json()
+    ok, msg = logica.editar_tematica(id_tematica, datos.get('nombre', ''))
+    return jsonify({'ok': ok, 'mensaje': msg})
+
+@app.route('/api/config/entradas_crudas')
+@login_requerido
+def api_entradas_crudas():
+    """Historial solo lectura con hashes."""
+    return jsonify(logica.obtener_entradas_crudas())
+
 if __name__ == '__main__':
     threading.Thread(target=vigilante_de_racha, daemon=True).start()
     print(f'🔔 Vigilante de racha activo (avisa a las {HORA_RECORDATORIO}:00)')

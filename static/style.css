@@ -1024,3 +1024,50 @@ html[data-tema="oscuro"] .fila-fechas input[type="date"] {
   color: #E6EDF7;
 }
 html[data-tema="oscuro"] .etiqueta-periodo { color: #9CC3F5; }
+
+/* =====================================================
+   ESTILOS DEL PANEL DE CONFIGURACIÓN
+   ===================================================== */
+.zona-config { max-width: 900px; margin: 0 auto; padding: 16px; }
+.zona-config h1 { color: var(--azul-profundo); margin-bottom: 8px; }
+
+.lista-config { list-style: none; padding: 0; margin: 0; }
+.lista-config li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.input-edit {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #D7E3F4;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.boton-guardar {
+  background: #E8F5E9;
+  color: #2FA36B;
+  box-shadow: 0 2px 0 #A5D6A7;
+}
+
+/* Tabla de auditoría con scroll horizontal para el celu */
+.tabla-cruda-wrap { overflow-x: auto; margin-top: 10px; }
+.tabla-cruda {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 500px;
+}
+.tabla-cruda th, .tabla-cruda td {
+  padding: 8px;
+  border-bottom: 1px solid #E3ECF7;
+  text-align: left;
+}
+.tabla-cruda th { background: #F0F6FD; color: var(--azul-profundo); }
+.hash-cell { font-family: monospace; font-size: 0.75rem; color: #7A8699; }
+
+html[data-tema="oscuro"] .input-edit { background: #101A2C; border-color: #2A3B57; color: #E6EDF7; }
+html[data-tema="oscuro"] .tabla-cruda th { background: #1B2440; }
+html[data-tema="oscuro"] .tabla-cruda td { border-bottom-color: #24344F; }
+html[data-tema="oscuro"] .boton-guardar { background: #1B3324; color: #81C784; box-shadow: 0 2px 0 #0A1A10; }

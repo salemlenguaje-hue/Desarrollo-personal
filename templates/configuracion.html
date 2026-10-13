@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario — Configuración</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="header">
+    <img src="/static/salem-logo.png" alt="Logo SALEM">
+    <span class="espacio"></span>
+    <a href="/" class="link-nav">Inicio</a>
+    <a href="/analisis" class="link-nav">Análisis 📊</a>
+    <a href="/tutor" class="link-nav">Sibeli ✨</a>
+    <a href="/configuracion" class="link-nav activo">Config ⚙️</a>
+    <a href="/logout" class="link-nav salir">Salir</a>
+  </header>
+
+  <main class="zona-config">
+    <h1>⚙️ Panel de Configuración</h1>
+    <p class="ayuda">Acá administrás las tablas del sistema. Editar nombres no rompe la blockchain (los hashes usan los IDs internos).</p>
+
+    <!-- 1. TEMÁTICAS -->
+    <section class="tarjeta">
+      <h2>📚 Temáticas</h2>
+      <ul class="lista-config" id="lista-tematicas"></ul>
+    </section>
+
+    <!-- 2. TIPOS DE ESTUDIO -->
+    <section class="tarjeta">
+      <h2>🛠️ Tipos de Estudio</h2>
+      <form id="form-nuevo-tipo" class="fila-form" style="margin-bottom: 12px;">
+        <input type="text" id="nuevo-tipo-nombre" placeholder="Nuevo tipo (ej: Podcast)" required>
+        <button class="boton" type="submit">Agregar</button>
+      </form>
+      <ul class="lista-config" id="lista-tipos"></ul>
+    </section>
+
+    <!-- 3. AUDITORÍA DE ENTRADAS (SOLO LECTURA) -->
+    <section class="tarjeta">
+      <h2>📜 Historial de Entradas (Solo Lectura)</h2>
+      <p class="ayuda">Vista cruda de la base de datos con sus firmas criptográficas. No se puede editar desde acá para proteger la cadena.</p>
+      <div class="tabla-cruda-wrap">
+        <table class="tabla-cruda" id="tabla-entradas">
+          <thead>
+            <tr><th>ID</th><th>Fecha</th><th>Temática</th><th>Min</th><th>Hash (inicio)</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/config.js"></script>
+</body>
+</html>
