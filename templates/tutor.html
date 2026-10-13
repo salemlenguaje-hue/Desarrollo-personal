@@ -62,9 +62,17 @@
           onclick="enviarAtajo('Ayudame a resumir en 5 puntos claros mi última entrada de estudio.')">✍️ Resumí conmigo</button>
       </div>
 
+      <!-- Documentos elegidos con 📎 y cajón de selección -->
+      <div class="docs-elegidos" id="docs-elegidos"></div>
+      <div class="cajon-docs" id="cajon-docs" hidden>
+        <div class="docs-titulo">📎 Elegí hasta 2 documentos para tu próxima pregunta:</div>
+        <div class="docs-lista" id="docs-lista"></div>
+      </div>
+
       <!-- Fila de escritura: ⚡ atajos + cajita + enviar -->
       <form class="fila-chat" id="form-chat">
         <button type="button" class="boton-icono" onclick="alternarAtajos()" title="Atajos rápidos">⚡</button>
+        <button type="button" class="boton-icono" onclick="alternarDocs()" title="Adjuntar documento de tu carpeta">📎</button>
         <input type="text" id="campo-chat" placeholder="Escribile a Sibeli…" autocomplete="off" required>
         <button class="boton" type="submit">➤</button>
       </form>

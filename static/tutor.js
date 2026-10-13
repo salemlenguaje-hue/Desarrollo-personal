@@ -109,6 +109,12 @@ function burbuja(rol, texto, opciones = {}) {
       (btn) => toggleFavorito(id, btn));
     if (favorito) btnFav.classList.add('activo');
     acciones.appendChild(btnFav);
+
+    // 💾 Guardar esta respuesta como documento en la carpeta de Sibeli
+    acciones.appendChild(botonAccion('💾', 'Guardar como documento', () => {
+      const nombre = prompt('Nombre del documento (ej: resumen-bayes.md):');
+      if (nombre) guardarComoDocumento(nombre, texto);
+    }));
   }
 
   div.appendChild(acciones);
@@ -184,7 +190,7 @@ async function enviar(texto) {
     const resp = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mensaje: texto, profundidad: profundidad })
+      body: JSON.stringify({ mensaje: texto, profundidad: profundidad, documentos: docsElegidos })
     });
 
     // Si el servidor responde feo (500, 502, lo que sea), lo manejamos acá
@@ -199,6 +205,15 @@ async function enviar(texto) {
 
     if (datos.ok) {
       burbuja('tutor', datos.respuesta, { id: datos.id_mensaje, pregunta: texto });
+      if (datos.docs_usados && datos.docs_usados.length) {
+        burbuja('tutor', '📚 Consulté en tu biblioteca: ' + datos.docs_usados.join(', '));
+      }
+      if (datos.guardados && datos.guardados.length) {
+        datos.guardados.forEach(aviso => burbuja('tutor', aviso));
+      }
+      docsElegidos = [];
+      pintarDocsElegidos();
+      document.getElementById('cajon-docs').hidden = true;
       localStorage.removeItem(CLAVE_BORRADOR);  // ya enviaste: borrador afuera
       mostrarSugerencias();
     } else {
@@ -360,4 +375,69 @@ function cerrarBusqueda() {
 function alternarAtajos() {
   const cajon = document.getElementById('atajos-chat');
   cajon.hidden = !cajon.hidden;
+}
+
+
+/* =====================================================
+   DOCUMENTOS: adjuntar con 📎 y guardar con 💾
+   ===================================================== */
+let docsElegidos = [];
+
+async function alternarDocs() {
+  const cajon = document.getElementById('cajon-docs');
+  cajon.hidden = !cajon.hidden;
+  if (!cajon.hidden) cargarDocsPicker();
+}
+
+async function cargarDocsPicker() {
+  const resp = await fetch('/api/documentos');
+  const docs = await resp.json();
+  const lista = document.getElementById('docs-lista');
+  lista.innerHTML = '';
+  if (!docs.length) {
+    lista.innerHTML = '<div class="ayuda">Carpeta vacía: tirá .txt, .md o .pdf en Download/Sibeli desde Android.</div>';
+    return;
+  }
+  docs.forEach(d => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'boton-chip' + (docsElegidos.includes(d.nombre) ? ' chip-activo' : '');
+    chip.textContent = d.nombre + ' (' + d.tam_kb + ' KB)';
+    chip.onclick = () => toggleDoc(d.nombre);
+    lista.appendChild(chip);
+  });
+}
+
+function toggleDoc(nombre) {
+  if (docsElegidos.includes(nombre)) {
+    docsElegidos = docsElegidos.filter(n => n !== nombre);
+  } else {
+    if (docsElegidos.length >= 2) { mostrarToast('Máximo 2 documentos por pregunta'); return; }
+    docsElegidos.push(nombre);
+  }
+  pintarDocsElegidos();
+  cargarDocsPicker();
+}
+
+function pintarDocsElegidos() {
+  const cont = document.getElementById('docs-elegidos');
+  cont.innerHTML = '';
+  docsElegidos.forEach(n => {
+    const chip = document.createElement('span');
+    chip.className = 'chip-doc';
+    chip.textContent = '📎 ' + n + ' ✖';
+    chip.title = 'Tocar para quitar';
+    chip.onclick = () => toggleDoc(n);
+    cont.appendChild(chip);
+  });
+}
+
+async function guardarComoDocumento(nombre, contenido) {
+  const resp = await fetch('/api/documentos/guardar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre: nombre, contenido: contenido })
+  });
+  const datos = await resp.json();
+  mostrarToast(datos.mensaje);
 }

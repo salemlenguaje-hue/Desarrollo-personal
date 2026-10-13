@@ -657,39 +657,63 @@ def construir_contexto():
         (chr(10).join(lineas) or '(sin entradas recientes)')
     )
 
-def preguntar_gemini(mensaje_usuario, profundidad='normal'):
+def preguntar_gemini(mensaje_usuario, profundidad='normal', documentos_adjuntos=None):
     """
     Manda la pregunta al cerebro de Sibeli (servicio Gemini por debajo)
     y devuelve (ok, respuesta).
-    Le pasamos los últimos mensajes de la charla para que haya conversación.
     """
     clave = cargar_clave_gemini()
     if not clave:
-        return False, 'Falta la clave de Sibeli: guardala en el archivo .gemini_key'
+        return False, 'Falta la clave de Sibeli: guardala en el archivo .gemini_key', []
 
     # Armamos la conversación previa (últimos 10 mensajes)
     historial = obtener_historial_chat()[-10:]
     contents = []
     for h in historial:
         rol = 'user' if h['rol'] == 'usuario' else 'model'
-        # Gemini exige turnos alternados: si se repite el rol, juntamos los mensajes
         if contents and contents[-1]['role'] == rol:
             contents[-1]['parts'][0]['text'] += '\n' + h['mensaje']
         else:
             contents.append({'role': rol, 'parts': [{'text': h['mensaje']}]})
     if contents and contents[0]['role'] != 'user':
-        contents.pop(0)  # la charla debe empezar con vos
+        contents.pop(0)
 
-    # Sumamos tu pregunta de ahora
     if contents and contents[-1]['role'] == 'user':
         contents[-1]['parts'][0]['text'] += '\n' + mensaje_usuario
     else:
         contents.append({'role': 'user', 'parts': [{'text': mensaje_usuario}]})
 
-    # Las instrucciones de quién es el tutor (con tu diario adentro)
-    # Ajustamos el tono según la profundidad elegida
-    # Usamos el parámetro que ya recibimos
-    
+    # ---------- Biblioteca y taller de Sibeli ----------
+    catalogo = catalogo_documentos()
+    seccion_biblioteca = 'BIBLIOTECA DE MARTÍN (documentos disponibles):\n' + catalogo + '\n'
+
+    nombres = list(documentos_adjuntos or [])
+    if not nombres and biblioteca_activa() and 'carpeta vacía' not in catalogo:
+        nombres = bibliotecaria(mensaje_usuario, catalogo)
+
+    textos_docs = []
+    docs_usados = []
+    for nombre in nombres[:2]:
+        ok_doc, texto_doc, aviso = leer_documento(nombre)
+        if ok_doc:
+            textos_docs.append(f'--- Documento: {nombre} {aviso}\n{texto_doc}')
+            docs_usados.append(nombre)
+
+    seccion_docs = ''
+    if textos_docs:
+        seccion_docs = ('DOCUMENTOS LEÍDOS PARA RESPONDER (usalos como fuente):\n'
+                        + '\n'.join(textos_docs) + '\n')
+
+    seccion_taller = ''
+    if escritura_permitida():
+        seccion_taller = (
+            'TALLER DE ESCRITURA: si Martín te pide crear o guardar un documento, '
+            'incluí en tu respuesta un bloque exacto así:\n'
+            '<<<ARCHIVO: nombre.md>>>\ncontenido\n<<<FIN ARCHIVO>>>\n'
+            'Para agregar a uno existente: <<<AGREGAR A: nombre.md>>> ... <<<FIN ARCHIVO>>>. '
+            'El sistema guardará el archivo y quitará el bloque de la respuesta visible.\n'
+        )
+
     tonos = {
         'superficial': 'Ofrecé una síntesis ejecutiva: dos o tres oraciones precisas, sin rodeos. ',
         'normal': 'Exponé los conceptos con claridad y orden, en lenguaje accesible pero preciso. ',
@@ -706,7 +730,8 @@ def preguntar_gemini(mensaje_usuario, profundidad='normal'):
         tonos.get(profundidad, tonos['normal']) +
         'Personalizás cada respuesta con el contexto de su diario de estudio. '
         'Si te pide que le tomés lección, formulás UNA pregunta por vez y esperás su respuesta. '
-        'Contexto del diario de Martín:\n' + construir_contexto()
+        'Contexto del diario de Martín:\n' + construir_contexto() + '\n' +
+        seccion_biblioteca + seccion_docs + seccion_taller
     )
 
     datos = {'profundidad': profundidad}
@@ -718,7 +743,6 @@ def preguntar_gemini(mensaje_usuario, profundidad='normal'):
     url_base = 'https://generativelanguage.googleapis.com/v1beta/models/'
     ultimo_error = ''
     for modelo in MODELOS_GEMINI:
-        # Hasta 2 intentos por modelo: los 503/429 son saturaciones temporarias
         for intento in range(3):
             try:
                 r = requests.post(
@@ -727,27 +751,26 @@ def preguntar_gemini(mensaje_usuario, profundidad='normal'):
                     json=cuerpo,
                     timeout=60
                 )
-                if r.status_code == 404:   # modelo inexistente: probamos el siguiente
+                if r.status_code == 404:
                     ultimo_error = f'modelo {modelo} no disponible'
                     break
-                if r.status_code in (429, 503):  # saturado: respiramos y reintentamos
+                if r.status_code in (429, 503):
                     ultimo_error = f'{modelo} saturado (HTTP {r.status_code})'
-                    time.sleep(2 + intento * 2)  # pausa creciente: 2s, 4s, 6s
+                    time.sleep(2 + intento * 2)
                     continue
                 if r.status_code != 200:
-                    return False, f'Sibeli no pudo responder (error {r.status_code}): {r.text[:200]}'
+                    return False, f'Sibeli no pudo responder (error {r.status_code}): {r.text[:200]}', []
                 datos = r.json()
                 texto = datos['candidates'][0]['content']['parts'][0]['text']
-                return True, texto
+                return True, texto, docs_usados
             except Exception as e:
                 ultimo_error = str(e)
                 time.sleep(2)
 
     return False, ('Sibeli está con mucha demanda ahora mismo (probé todos sus '
-                   'cerebros con reintentos). Último error: {ultimo_error}. '
-                   'Esperá un minutito y tocá 🔄 Reintentar.')
+                   'cerebros con reintentos). Último error: ' + ultimo_error + '. '
+                   'Esperá un minutito y tocá 🔄 Reintentar.'), []
 
-# ==================== MEJORAS DEL TUTOR ====================
 
 def buscar_en_chat(texto_busqueda):
     """Busca mensajes que contengan el texto (case insensitive)."""
@@ -993,3 +1016,187 @@ def eliminar_mensaje_chat(id_mensaje):
     conn.commit()
     conn.close()
     return True
+
+# ==================== BIBLIOTECA Y TALLER DE SIBELI ====================
+
+import re
+import json
+
+LIMITE_CHARS_DOC = 30000  # tope por documento para no desbordar la consulta
+CARPETA_POR_DEFECTO = os.path.join(
+    os.path.expanduser('~'), 'storage', 'shared', 'Download', 'Sibeli')
+
+def obtener_carpeta_sibeli():
+    """La única carpeta del mundo a la que Sibeli puede asomarse."""
+    config = obtener_configuracion()
+    ruta = config.get('sibeli_carpeta', '').strip()
+    return ruta or CARPETA_POR_DEFECTO
+
+def asegurar_carpeta_sibeli():
+    ruta = obtener_carpeta_sibeli()
+    os.makedirs(ruta, exist_ok=True)
+    return ruta
+
+def ruta_permitida(nombre):
+    """
+    Seguridad: convierte el nombre en ruta real y verifica que quede
+    DENTRO de la carpeta blanca-lista (adiós trucos con ../../).
+    Devuelve la ruta o None si es traviesa.
+    """
+    carpeta = os.path.realpath(asegurar_carpeta_sibeli())
+    completa = os.path.realpath(os.path.join(carpeta, nombre))
+    if completa == carpeta or completa.startswith(carpeta + os.sep):
+        return completa
+    return None
+
+def sanitizar_nombre(nombre):
+    """Nombre de archivo seguro: sin rutas, sin símbolos raros, con extensión."""
+    nombre = os.path.basename(nombre.replace('\\', '/')).strip()
+    nombre = re.sub(r'[^\w\-. ]', '_', nombre)
+    if not nombre:
+        return None
+    if os.path.splitext(nombre)[1].lower() not in ('.md', '.txt'):
+        nombre += '.md'
+    return nombre
+
+def escritura_permitida():
+    return obtener_configuracion().get('sibeli_escritura', '1') == '1'
+
+def biblioteca_activa():
+    return obtener_configuracion().get('sibeli_biblioteca', '1') == '1'
+
+def listar_documentos():
+    """Catálogo simple: nombre, tamaño y extensión de cada documento."""
+    carpeta = asegurar_carpeta_sibeli()
+    docs = []
+    for nombre in sorted(os.listdir(carpeta)):
+        completa = os.path.join(carpeta, nombre)
+        if os.path.isfile(completa):
+            ext = os.path.splitext(nombre)[1].lower()
+            if ext in ('.txt', '.md', '.pdf'):
+                docs.append({
+                    'nombre': nombre,
+                    'tam_kb': round(os.path.getsize(completa) / 1024, 1),
+                    'ext': ext,
+                })
+    return docs
+
+def _extraer_pdf(ruta):
+    """Saca el texto de un PDF página por página."""
+    from pypdf import PdfReader
+    lector = PdfReader(ruta)
+    return '\n'.join(pag.extract_text() or '' for pag in lector.pages)
+
+def leer_documento(nombre):
+    """Devuelve (ok, texto, aviso). txt/md directo; pdf con pypdf."""
+    ruta = ruta_permitida(nombre)
+    if not ruta:
+        return False, '', 'Nombre no permitido por la protección de carpeta.'
+    if not os.path.exists(ruta):
+        return False, '', 'El documento no existe en la carpeta.'
+    ext = os.path.splitext(ruta)[1].lower()
+    try:
+        if ext in ('.txt', '.md'):
+            with open(ruta, encoding='utf-8', errors='replace') as f:
+                texto = f.read()
+        elif ext == '.pdf':
+            texto = _extraer_pdf(ruta)
+        else:
+            return False, '', 'Formato no soportado todavía (deuda técnica: Word).'
+    except Exception as error:
+        return False, '', f'No pude leer el documento: {error}'
+    aviso = ''
+    if len(texto) > LIMITE_CHARS_DOC:
+        texto = texto[:LIMITE_CHARS_DOC]
+        aviso = f'(documento largo: Sibeli ve los primeros {LIMITE_CHARS_DOC} caracteres)'
+    return True, texto, aviso
+
+def catalogo_documentos():
+    """Nombres + primeras líneas: el estante que Sibeli siempre tiene a la vista."""
+    carpeta = asegurar_carpeta_sibeli()
+    lineas = []
+    for doc in listar_documentos():
+        preview = ''
+        if doc['ext'] in ('.txt', '.md'):
+            try:
+                with open(os.path.join(carpeta, doc['nombre']),
+                          encoding='utf-8', errors='replace') as f:
+                    preview = f.read(200).replace('\n', ' ')
+            except Exception:
+                preview = ''
+        lineas.append(f"- {doc['nombre']} ({doc['tam_kb']} KB): {preview}…")
+    return '\n'.join(lineas) or '(carpeta vacía)'
+
+def bibliotecaria(pregunta, catalogo):
+    """
+    Llamada rápida y barata: la bibliotecaria mira el catálogo y elige
+    hasta 2 documentos que realmente aporten a la pregunta.
+    """
+    clave = cargar_clave_gemini()
+    if not clave:
+        return []
+    prompt = (
+        'Sos una bibliotecaria precisa. Catálogo disponible:\n' + catalogo +
+        '\n\nPregunta del usuario:\n' + pregunta +
+        '\n\nRespondé SOLO con JSON: {"archivos": ["nombre"]} con hasta 2 nombres '
+        'que realmente aporten. Si ninguno aporta: {"archivos": []}.'
+    )
+    try:
+        r = requests.post(
+            'https://generativelanguage.googleapis.com/v1beta/models/' + MODELOS_GEMINI[0] + ':generateContent',
+            headers={'x-goog-api-key': clave, 'Content-Type': 'application/json'},
+            json={'contents': [{'parts': [{'text': prompt}]}]},
+            timeout=30)
+        if r.status_code != 200:
+            return []
+        texto = r.json()['candidates'][0]['content']['parts'][0]['text']
+        inicio, fin = texto.find('{'), texto.rfind('}')
+        if inicio == -1 or fin == -1:
+            return []
+        nombres = json.loads(texto[inicio:fin + 1]).get('archivos', [])
+        return [n for n in nombres if isinstance(n, str)][:2]
+    except Exception:
+        return []
+
+def guardar_documento(nombre, contenido, modo='crear'):
+    """Escribe DENTRO de la carpeta blanca-lista, con nombre sanitizado."""
+    if not escritura_permitida():
+        return False, 'Sibeli no tiene permiso de escritura (activalo en Config ⚙️).'
+    nombre = sanitizar_nombre(nombre)
+    if not nombre:
+        return False, 'Nombre de archivo inválido.'
+    ruta = ruta_permitida(nombre)
+    if not ruta:
+        return False, 'El nombre queda fuera de la carpeta permitida.'
+    try:
+        if modo == 'agregar' and os.path.exists(ruta):
+            with open(ruta, 'a', encoding='utf-8') as f:
+                f.write('\n\n' + contenido)
+            return True, f'Agregado a: {nombre}'
+        with open(ruta, 'w', encoding='utf-8') as f:
+            f.write(contenido)
+        return True, f'Guardado: {nombre}'
+    except Exception as error:
+        return False, f'No pude guardar: {error}'
+
+PATRON_BLOQUE = re.compile(
+    r'<<<(?P<verbo>ARCHIVO|AGREGAR A):\s*(?P<nombre>[^>\n]+?)>>>\s*'
+    r'(?P<contenido>.*?)\s*<<<FIN\s*ARCHIVO>>>',
+    re.S)
+
+def extraer_y_guardar_bloques(respuesta):
+    """
+    Detecta los bloques de taller en la respuesta de Sibeli,
+    los guarda en la carpeta y los quita de lo que ves en el chat.
+    """
+    mensajes = []
+
+    def reemplazo(m):
+        modo = 'agregar' if m.group('verbo') == 'AGREGAR A' else 'crear'
+        ok, msg = guardar_documento(m.group('nombre'), m.group('contenido'), modo)
+        mensajes.append(('💾 ' if ok else '⚠️ ') + msg)
+        return ''
+
+    limpia = PATRON_BLOQUE.sub(reemplazo, respuesta)
+    limpia = re.sub(r'\n{3,}', '\n\n', limpia).strip()
+    return limpia, mensajes

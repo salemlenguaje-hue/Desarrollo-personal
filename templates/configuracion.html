@@ -47,6 +47,21 @@
       <button type="button" class="boton boton-violeta" style="margin-top:10px;" onclick="borrarTodoChat()">🗑️ Borrar toda la charla</button>
     </section>
 
+    <!-- Carpeta de Sibeli -->
+    <section class="tarjeta">
+      <h2>📂 Carpeta de Sibeli</h2>
+      <p class="ayuda" id="carpeta-sibeli-ruta">…</p>
+      <label class="chip toggle-chip">
+        <input type="checkbox" id="toggle-biblioteca" onchange="guardarPreferenciasSibeli()">
+        📚 Modo bibliotecaria (Sibeli elige y lee documentos sola)
+      </label>
+      <label class="chip toggle-chip">
+        <input type="checkbox" id="toggle-escritura" onchange="guardarPreferenciasSibeli()">
+        ✍️ Permitir a Sibeli crear y editar documentos
+      </label>
+      <ul class="lista-config lista-chats" id="lista-docs"></ul>
+    </section>
+
     <!-- 3. AUDITORÍA DE ENTRADAS (SOLO LECTURA) -->
     <section class="tarjeta">
       <h2>📜 Historial de Entradas (Solo Lectura)</h2>
@@ -61,6 +76,15 @@
       </div>
     </section>
   </main>
+
+  <!-- Modal para ver documentos -->
+  <div class="modal-fondo" id="modal-doc" hidden onclick="if (event.target === this) cerrarModalDoc()">
+    <div class="modal-caja modal-ancho">
+      <h3 id="modal-doc-titulo">Documento</h3>
+      <pre class="vista-compilado" id="modal-doc-texto"></pre>
+      <button type="button" class="boton" onclick="cerrarModalDoc()">Cerrar</button>
+    </div>
+  </div>
 
   <div class="toast" id="toast"></div>
   <script src="/static/config.js"></script>

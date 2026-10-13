@@ -1187,3 +1187,30 @@ html[data-tema="oscuro"] .item-chat { background: #101A2C; border-color: #2A3B57
   .cabecera-chat { padding: 10px 12px; }
   .fila-chat { padding: 0 4px 4px; }
 }
+
+/* =====================================================
+   BIBLIOTECA Y TALLER: cajón de docs, chips y modal ancho
+   ===================================================== */
+.cajon-docs { padding: 8px 12px; border-top: 2px dashed #D7E3F4; }
+.docs-titulo { font-weight: 700; font-size: .85rem; color: var(--azul-profundo); }
+.docs-lista { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.docs-elegidos { padding: 0 12px; }
+.chip-doc {
+  display: inline-block;
+  background: #F7F4FC;
+  border: 2px solid var(--violeta);
+  color: var(--violeta);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: .8rem;
+  font-weight: 700;
+  margin: 0 6px 6px 0;
+  cursor: pointer;
+}
+.toggle-chip { display: flex; gap: 8px; align-items: center; margin: 6px 0; cursor: pointer; }
+.modal-ancho { max-width: 92vw; width: 640px; }
+.modal-caja pre { max-height: 60vh; overflow: auto; text-align: left; }
+
+html[data-tema="oscuro"] .cajon-docs { border-top-color: #2A3B57; }
+html[data-tema="oscuro"] .docs-titulo { color: #CFE0F7; }
+html[data-tema="oscuro"] .chip-doc { background: #1B2440; }

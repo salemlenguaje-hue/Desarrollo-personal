@@ -176,3 +176,86 @@ async function borrarTodoChat() {
 }
 
 cargarChats();
+
+/* =====================================================
+   CARPETA DE SIBELI: preferencias y manager de documentos
+   ===================================================== */
+async function cargarPreferenciasSibeli() {
+  const resp = await fetch('/api/config/sibeli');
+  const datos = await resp.json();
+  document.getElementById('carpeta-sibeli-ruta').textContent = '📁 ' + datos.carpeta;
+  document.getElementById('toggle-biblioteca').checked = datos.biblioteca;
+  document.getElementById('toggle-escritura').checked = datos.escritura;
+  cargarDocs();
+}
+
+async function guardarPreferenciasSibeli() {
+  const resp = await fetch('/api/config/sibeli', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      biblioteca: document.getElementById('toggle-biblioteca').checked,
+      escritura: document.getElementById('toggle-escritura').checked
+    })
+  });
+  const datos = await resp.json();
+  avisar(datos.mensaje);
+}
+
+async function cargarDocs() {
+  const resp = await fetch('/api/documentos');
+  const docs = await resp.json();
+  const ul = document.getElementById('lista-docs');
+  ul.innerHTML = '';
+  if (!docs.length) {
+    ul.innerHTML = '<li class="ayuda">Carpeta vacía. Guardá .txt, .md o .pdf en Download/Sibeli desde Android.</li>';
+    return;
+  }
+  docs.forEach(d => {
+    const li = document.createElement('li');
+    li.className = 'item-chat';
+    const span = document.createElement('span');
+    span.className = 'chat-resumen';
+    span.textContent = '📄 ' + d.nombre + ' (' + d.tam_kb + ' KB)';
+    li.appendChild(span);
+    const ver = document.createElement('button');
+    ver.className = 'boton-chico';
+    ver.textContent = '👁';
+    ver.title = 'Ver contenido';
+    ver.onclick = () => verDoc(d.nombre);
+    const bor = document.createElement('button');
+    bor.className = 'boton-chico boton-borrar';
+    bor.textContent = '🗑️';
+    bor.onclick = () => borrarDoc(d.nombre);
+    li.appendChild(ver);
+    li.appendChild(bor);
+    ul.appendChild(li);
+  });
+}
+
+async function verDoc(nombre) {
+  const resp = await fetch('/api/documentos/ver?nombre=' + encodeURIComponent(nombre));
+  const datos = await resp.json();
+  document.getElementById('modal-doc-titulo').textContent = nombre;
+  document.getElementById('modal-doc-texto').textContent =
+    datos.ok ? (datos.aviso ? datos.aviso + '\n\n' : '') + datos.texto : datos.aviso;
+  document.getElementById('modal-doc').hidden = false;
+}
+
+function cerrarModalDoc() {
+  document.getElementById('modal-doc').hidden = true;
+}
+
+async function borrarDoc(nombre) {
+  if (!confirm('¿Borrar ' + nombre + ' de la carpeta de Sibeli?')) return;
+  const resp = await fetch('/api/documentos/borrar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre: nombre })
+  });
+  const datos = await resp.json();
+  avisar(datos.mensaje);
+  cargarDocs();
+}
+
+cargarPreferenciasSibeli();

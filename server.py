@@ -263,13 +263,18 @@ def api_chat():
     try:
         logica.guardar_chat('usuario', mensaje)
         profundidad = datos.get('profundidad', 'normal')
-        ok, respuesta = logica.preguntar_gemini(mensaje, profundidad)
+        documentos = datos.get('documentos', [])
+        ok, respuesta, docs_usados = logica.preguntar_gemini(mensaje, profundidad, documentos)
 
         if not ok:
             return jsonify({'ok': False, 'mensaje': respuesta})
 
+        # Si Sibeli escribió bloques de taller, se guardan y salen de la respuesta
+        respuesta, avisos_taller = logica.extraer_y_guardar_bloques(respuesta)
+
         id_mensaje = logica.guardar_chat('tutor', respuesta)
-        return jsonify({'ok': True, 'respuesta': respuesta, 'id_mensaje': id_mensaje})
+        return jsonify({'ok': True, 'respuesta': respuesta, 'id_mensaje': id_mensaje,
+                        'docs_usados': docs_usados, 'guardados': avisos_taller})
     except Exception as error:
         # Si algo explota, lo anotamos en la consola y respondemos amable
         print('❌ Error en /api/chat:', error)
@@ -416,6 +421,57 @@ def api_config_borrar_todo():
 def api_config_borrar_mensaje(id_mensaje):
     logica.eliminar_mensaje_chat(id_mensaje)
     return jsonify({'ok': True, 'mensaje': 'Mensaje borrado'})
+
+
+# ==================== DOCUMENTOS DE SIBELI ====================
+
+@app.route('/api/documentos')
+@login_requerido
+def api_documentos():
+    """Catálogo de la carpeta de Sibeli."""
+    return jsonify(logica.listar_documentos())
+
+@app.route('/api/documentos/ver')
+@login_requerido
+def api_ver_documento():
+    nombre = request.args.get('nombre', '')
+    ok, texto, aviso = logica.leer_documento(nombre)
+    return jsonify({'ok': ok, 'texto': texto, 'aviso': aviso})
+
+@app.route('/api/documentos/guardar', methods=['POST'])
+@login_requerido
+def api_guardar_documento():
+    datos = request.get_json()
+    ok, msg = logica.guardar_documento(datos.get('nombre', ''), datos.get('contenido', ''))
+    return jsonify({'ok': ok, 'mensaje': msg})
+
+@app.route('/api/documentos/borrar', methods=['POST'])
+@login_requerido
+def api_borrar_documento():
+    datos = request.get_json()
+    ruta = logica.ruta_permitida(datos.get('nombre', ''))
+    if ruta and os.path.exists(ruta):
+        os.remove(ruta)
+        return jsonify({'ok': True, 'mensaje': 'Documento borrado'})
+    return jsonify({'ok': False, 'mensaje': 'No encontrado'})
+
+@app.route('/api/config/sibeli', methods=['GET', 'POST'])
+@login_requerido
+def api_config_sibeli():
+    """Preferencias de la biblioteca y el taller."""
+    if request.method == 'POST':
+        datos = request.get_json()
+        if 'biblioteca' in datos:
+            logica.actualizar_configuracion('sibeli_biblioteca', '1' if datos['biblioteca'] else '0')
+        if 'escritura' in datos:
+            logica.actualizar_configuracion('sibeli_escritura', '1' if datos['escritura'] else '0')
+        return jsonify({'ok': True, 'mensaje': 'Preferencias guardadas'})
+    config = logica.obtener_configuracion()
+    return jsonify({
+        'carpeta': logica.obtener_carpeta_sibeli(),
+        'biblioteca': config.get('sibeli_biblioteca', '1') == '1',
+        'escritura': config.get('sibeli_escritura', '1') == '1',
+    })
 
 if __name__ == '__main__':
     threading.Thread(target=vigilante_de_racha, daemon=True).start()
