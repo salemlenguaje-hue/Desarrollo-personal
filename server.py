@@ -396,6 +396,27 @@ def api_entradas_crudas():
     """Historial solo lectura con hashes."""
     return jsonify(logica.obtener_entradas_crudas())
 
+
+# ==================== CHARLAS DE SIBELI EN CONFIG ====================
+
+@app.route('/api/config/chats')
+@login_requerido
+def api_config_chats():
+    """Lista completa de la charla para administrarla."""
+    return jsonify(logica.obtener_historial_chat())
+
+@app.route('/api/config/chats/borrar_todo', methods=['POST'])
+@login_requerido
+def api_config_borrar_todo():
+    logica.borrar_historial_chat()
+    return jsonify({'ok': True, 'mensaje': 'Charla completa borrada'})
+
+@app.route('/api/config/chats/<int:id_mensaje>', methods=['DELETE'])
+@login_requerido
+def api_config_borrar_mensaje(id_mensaje):
+    logica.eliminar_mensaje_chat(id_mensaje)
+    return jsonify({'ok': True, 'mensaje': 'Mensaje borrado'})
+
 if __name__ == '__main__':
     threading.Thread(target=vigilante_de_racha, daemon=True).start()
     print(f'🔔 Vigilante de racha activo (avisa a las {HORA_RECORDATORIO}:00)')

@@ -1071,3 +1071,119 @@ html[data-tema="oscuro"] .input-edit { background: #101A2C; border-color: #2A3B5
 html[data-tema="oscuro"] .tabla-cruda th { background: #1B2440; }
 html[data-tema="oscuro"] .tabla-cruda td { border-bottom-color: #24344F; }
 html[data-tema="oscuro"] .boton-guardar { background: #1B3324; color: #81C784; box-shadow: 0 2px 0 #0A1A10; }
+
+/* =====================================================
+   SIBELI RESPIRABLE: cabecera compacta, sugerencias
+   flotantes, cajones y más espacio de lectura
+   ===================================================== */
+.cabecera-chat { flex-wrap: wrap; gap: 10px; padding-bottom: 10px; }
+.cabecera-texto { flex: 1; min-width: 0; }
+.acciones-chat { flex-wrap: wrap; justify-content: flex-end; }
+
+.select-mini {
+  font-size: .8rem;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 2px solid #D7E3F4;
+  background: var(--blanco);
+  color: var(--texto);
+  max-width: 112px;
+  font-weight: 700;
+}
+
+.barra-busqueda { display: flex; gap: 6px; align-items: center; }
+.barra-busqueda input { flex: 1; }
+
+/* Sugerencias que viven DENTRO del chat */
+.fila-sugerencias {
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  background: #F7F4FC;
+  border: 2px dashed var(--violeta);
+  border-radius: 14px;
+  animation: popTrofeo .3s ease;
+}
+.fila-sugerencias .sugerencias-botones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fila-sugerencias .boton-chip { white-space: normal; text-align: left; }
+
+.atajos-chat { padding: 8px 12px 0; }
+
+/* En el celu, el lienzo gana el espacio que liberamos */
+@media (max-width: 700px) {
+  .lienzo-chat { max-height: 62vh; }
+}
+
+html[data-tema="oscuro"] .select-mini { background: #16233A; border-color: #2A3B57; color: #E6EDF7; }
+html[data-tema="oscuro"] .fila-sugerencias { background: #1B2440; }
+
+/* =====================================================
+   GESTIÓN DE CHARLAS CON SIBELI EN CONFIGURACIÓN
+   ===================================================== */
+.lista-chats { max-height: 320px; overflow-y: auto; }
+.item-chat {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #F0F6FD;
+  border: 2px solid #DCE9F8;
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.chat-resumen { flex: 1; font-size: .85rem; color: var(--texto); white-space: pre-wrap; }
+html[data-tema="oscuro"] .item-chat { background: #101A2C; border-color: #2A3B57; }
+
+/* =====================================================
+   SIBELI ESTILO CHAT MODERNO (inspirado en Qwen/WhatsApp)
+   - Sibeli escribe a lo ancho, sin caja: pura lectura
+   - Tus mensajes: burbuja de color a la derecha
+   - En el celu el chat va de borde a borde, como app real
+   - Cabecera en UNA sola fila (herramientas scrolleables)
+   ===================================================== */
+
+/* --- Cabecera: una fila, sin saltos feos --- */
+.cabecera-chat { flex-wrap: nowrap; gap: 8px; }
+.cabecera-texto { overflow: hidden; }
+.chat-titulo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acciones-chat { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.acciones-chat::-webkit-scrollbar { display: none; }
+.acciones-chat > * { flex: 0 0 auto; }
+.select-mini { max-width: 96px; }
+@media (max-width: 480px) {
+  .chat-subtitulo { display: none; }  /* en celus chicos, solo el nombre */
+}
+
+/* --- Sibeli habla a lo ancho, como un chat moderno --- */
+.lienzo-chat { padding: 10px 12px; }
+.burbuja { max-width: 100%; line-height: 1.65; }
+.burbuja-tutor {
+  align-self: stretch;          /* ocupa todo el ancho disponible */
+  background: transparent;      /* sin caja: el texto es el protagonista */
+  border: none;
+  border-radius: 0;
+  padding: 6px 2px;
+}
+.burbuja-usuario {
+  align-self: flex-end;         /* tus mensajes, a la derecha */
+  max-width: 88%;
+}
+
+/* --- Celu: chat de borde a borde, como app de mensajería --- */
+@media (max-width: 700px) {
+  .zona-chat { padding: 0; }
+  .tarjeta-chat {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);   /* toda la pantalla menos el menú */
+    min-height: 0;
+  }
+  .lienzo-chat { max-height: none; flex: 1; }  /* el lienzo gana todo lo libre */
+  .cabecera-chat { padding: 10px 12px; }
+  .fila-chat { padding: 0 4px 4px; }
+}

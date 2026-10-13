@@ -149,6 +149,7 @@ async function cargarHistorial() {
         'Hola ' + usuario + '. Soy Sibeli, tu tutora personal.\n' +
         'Conozco tu diario de estudio: temáticas, resúmenes, racha y tiempo dedicado.\n' +
         '¿En qué puedo asistirte hoy?');
+      document.getElementById('atajos-chat').hidden = false;  // debut con atajos a la vista
       return;
     }
 
@@ -173,6 +174,7 @@ async function cargarHistorial() {
 async function enviar(texto) {
   texto = (texto || '').trim();
   if (!texto) return;
+  quitarSugerencias();  // la conversación avanzó: las sugerencias se retiran
 
   const profundidad = document.getElementById('nivel-profundidad').value;
   burbuja('usuario', texto);
@@ -285,25 +287,50 @@ async function borrarChat() {
   }
 }
 
-// ==================== SUGERENCIAS ====================
+// ==================== SUGERENCIAS FLOTANTES ====================
+// Nacen dentro del chat, después de la respuesta de Sibeli.
+// Si no elegís ninguna, se desvanecen solas a los 30 segundos.
+let filaSugerencias = null;
+let timerSugerencias = null;
+
+function quitarSugerencias() {
+  if (filaSugerencias) { filaSugerencias.remove(); filaSugerencias = null; }
+  if (timerSugerencias) { clearTimeout(timerSugerencias); timerSugerencias = null; }
+}
+
 async function mostrarSugerencias() {
-  const contenedor = document.getElementById('sugerencias-seguimiento');
-  const botones = document.getElementById('sugerencias-botones');
-  if (!contenedor || !botones) return;
+  quitarSugerencias();
   try {
     const resp = await fetch('/api/chat/sugerencias');
     if (!resp.ok) return;
     const sugerencias = await resp.json();
-    botones.innerHTML = '';
+
+    const fila = document.createElement('div');
+    fila.className = 'fila-sugerencias';
+
+    const titulo = document.createElement('div');
+    titulo.className = 'sugerencias-titulo';
+    titulo.textContent = '💡 Preguntas relacionadas:';
+    fila.appendChild(titulo);
+
+    const cont = document.createElement('div');
+    cont.className = 'sugerencias-botones';
     sugerencias.forEach(s => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'boton-chip';
       btn.textContent = s;
-      btn.onclick = () => enviar(s);
-      botones.appendChild(btn);
+      btn.onclick = () => { quitarSugerencias(); enviar(s); };
+      cont.appendChild(btn);
     });
-    contenedor.hidden = false;
+    fila.appendChild(cont);
+
+    lienzo.appendChild(fila);
+    filaSugerencias = fila;
+    lienzo.scrollTop = lienzo.scrollHeight;
+
+    // Si no elegís ninguna, se van solitas para no ocupar lugar
+    timerSugerencias = setTimeout(quitarSugerencias, 30000);
   } catch (error) {
     console.error('Sugerencias no disponibles:', error);
   }
@@ -312,3 +339,25 @@ async function mostrarSugerencias() {
 // ==================== ARRANQUE ====================
 cargarHistorial();
 restaurarBorrador();
+
+
+/* =====================================================
+   CAJONES: búsqueda y atajos que se abren y cierran
+   ===================================================== */
+function alternarBusqueda() {
+  const barra = document.getElementById('barra-busqueda');
+  barra.hidden = !barra.hidden;
+  if (!barra.hidden) document.getElementById('buscar-chat').focus();
+}
+
+function cerrarBusqueda() {
+  const input = document.getElementById('buscar-chat');
+  input.value = '';
+  buscarEnChat('');          // devuelve la visibilidad a todas las burbujas
+  document.getElementById('barra-busqueda').hidden = true;
+}
+
+function alternarAtajos() {
+  const cajon = document.getElementById('atajos-chat');
+  cajon.hidden = !cajon.hidden;
+}

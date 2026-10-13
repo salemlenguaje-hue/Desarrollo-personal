@@ -37,6 +37,16 @@
       <ul class="lista-config" id="lista-tipos"></ul>
     </section>
 
+    <!-- Charlas con Sibeli -->
+    <section class="tarjeta">
+      <h2>✨ Charlas con Sibeli</h2>
+      <form class="fila-form" style="margin-bottom:10px;" onsubmit="return false;">
+        <input type="text" id="filtro-chats" placeholder="Filtrar mensajes…" oninput="filtrarChats(this.value)">
+      </form>
+      <ul class="lista-config lista-chats" id="lista-chats"></ul>
+      <button type="button" class="boton boton-violeta" style="margin-top:10px;" onclick="borrarTodoChat()">🗑️ Borrar toda la charla</button>
+    </section>
+
     <!-- 3. AUDITORÍA DE ENTRADAS (SOLO LECTURA) -->
     <section class="tarjeta">
       <h2>📜 Historial de Entradas (Solo Lectura)</h2>

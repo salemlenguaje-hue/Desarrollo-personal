@@ -985,3 +985,11 @@ def obtener_entradas_crudas():
     filas = cur.fetchall()
     conn.close()
     return [dict(f) for f in filas]
+
+def eliminar_mensaje_chat(id_mensaje):
+    """Borra un mensaje suelto de la charla con Sibeli."""
+    conn = obtener_conexion()
+    conn.execute('DELETE FROM chats WHERE id = ?', (id_mensaje,))
+    conn.commit()
+    conn.close()
+    return True
