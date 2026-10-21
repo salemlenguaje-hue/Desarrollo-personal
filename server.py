@@ -483,8 +483,97 @@ def api_resumen_entrada():
         return jsonify({'ok': False, 'mensaje': resultado})
     return jsonify({'ok': True, 'campos': resultado})
 
+
+import time as _time_auto
+
+def auto_push_diario():
+    """Hilo que sube el compilado de ayer a GitHub a las 00:01 si está activado."""
+    import subprocess
+    while True:
+        ahora = datetime.now()
+        # Esperamos hasta las 00:01
+        if ahora.hour == 0 and ahora.minute == 1:
+            config = logica.obtener_configuracion()
+            if config.get('auto_push_github', '1') == '1':
+                ayer = (ahora - timedelta(days=1)).strftime('%Y-%m-%d')
+                try:
+                    compilado = logica.generar_compilado_fecha(ayer)
+                    os.makedirs('compilados', exist_ok=True)
+                    with open(os.path.join('compilados', f'{ayer}.md'), 'w', encoding='utf-8') as f:
+                        f.write(compilado)
+                    
+                    subprocess.run(['git', 'add', '-A'], timeout=10)
+                    subprocess.run(['git', 'commit', '-m', f'Auto-push: compilado del {ayer}'], timeout=10)
+                    subprocess.run(['git', 'push', 'origin', 'main'], timeout=30)
+                    print(f'✅ Auto-push exitoso para {ayer}')
+                except Exception as e:
+                    print(f'❌ Error en auto-push: {e}')
+            _time_auto.sleep(60) # Dormimos 1 minuto para no ejecutarlo 60 veces en el minuto 1
+        else:
+            _time_auto.sleep(30) # Revisamos cada 30 segundos
+
+
+@app.route('/api/entradas/buscar')
+@login_requerido
+def api_buscar_entradas():
+    texto = request.args.get('q', '').strip()
+    if not texto:
+        return jsonify([])
+    return jsonify(logica.buscar_entradas(texto))
+
+@app.route('/api/config/auto_push', methods=['POST'])
+@login_requerido
+def api_config_auto_push():
+    datos = request.get_json()
+    logica.actualizar_configuracion('auto_push_github', datos.get('valor', '1'))
+    return jsonify({'ok': True})
+
+@app.route('/reportes')
+@login_requerido
+def reportes():
+    return render_template('reportes.html', usuario=session['usuario'])
+
+@app.route('/api/entradas/historial')
+@login_requerido
+def api_historial_entradas():
+    """Devuelve la lista completa de entradas para armar la tabla de reportes."""
+    conn = logica.obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT e.id, e.fecha, e.tematica_id, t.nombre as tematica_nombre
+        FROM entradas e
+        JOIN tematicas t ON e.tematica_id = t.id
+        ORDER BY e.fecha DESC, e.id DESC
+    ''')
+    resultados = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return jsonify(resultados)
+
+@app.route('/api/entradas/<int:entrada_id>')
+@login_requerido
+def api_detalle_entrada(entrada_id):
+    """Devuelve el contenido completo de una entrada específica."""
+    conn = logica.obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT e.*, t.nombre as tematica_nombre,
+               GROUP_CONCAT(te.nombre, ', ') as tipos_nombres
+        FROM entradas e
+        JOIN tematicas t ON e.tematica_id = t.id
+        LEFT JOIN entrada_tipos et ON e.id = et.entrada_id
+        LEFT JOIN tipos_estudio te ON et.tipo_id = te.id
+        WHERE e.id = ?
+        GROUP BY e.id
+    ''', (entrada_id,))
+    entrada = cur.fetchone()
+    conn.close()
+    if entrada:
+        return jsonify(dict(entrada))
+    return jsonify({'error': 'Entrada no encontrada'}), 404
 if __name__ == '__main__':
     threading.Thread(target=vigilante_de_racha, daemon=True).start()
+    threading.Thread(target=auto_push_diario, daemon=True).start()
+    print(' Auto-push diario activo (00:01)')
     print(f'🔔 Vigilante de racha activo (avisa a las {HORA_RECORDATORIO}:00)')
     print('🚀 Diario de Capacitación andando:')
     print(f'   👉 En este celu:  http://localhost:{PUERTO}')

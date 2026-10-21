@@ -1214,3 +1214,159 @@ html[data-tema="oscuro"] .item-chat { background: #101A2C; border-color: #2A3B57
 html[data-tema="oscuro"] .cajon-docs { border-top-color: #2A3B57; }
 html[data-tema="oscuro"] .docs-titulo { color: #CFE0F7; }
 html[data-tema="oscuro"] .chip-doc { background: #1B2440; }
+
+/* =====================================================
+   ESTILOS DE REPORTES
+   ===================================================== */
+.zona-reportes { max-width: 800px; margin: 0 auto; padding: 16px; }
+.fila-busqueda { display: flex; gap: 10px; margin-bottom: 20px; }
+.fila-busqueda input { flex: 1; }
+.lista-resultados { display: flex; flex-direction: column; gap: 10px; }
+.item-entrada { 
+  display: flex; 
+  gap: 12px; 
+  align-items: flex-start; 
+  background: #F8FAFC; 
+  border: 1px solid #E2E8F0; 
+  padding: 12px; 
+  border-radius: 8px; 
+}
+.item-entrada input[type="checkbox"] { 
+  width: 20px; 
+  height: 20px; 
+  margin-top: 4px; 
+  cursor: pointer; 
+}
+.contenido-entrada { flex: 1; }
+.entrada-header { font-size: 0.9rem; color: #64748B; margin-bottom: 4px; }
+.entrada-resumen { font-size: 0.95rem; color: #1E293B; line-height: 1.4; }
+.acciones-reportes { 
+  margin-top: 20px; 
+  padding-top: 20px; 
+  border-top: 2px solid #E2E8F0; 
+  display: flex; 
+  align-items: center; 
+  gap: 15px; 
+}
+#contador-seleccion { font-weight: bold; color: var(--violeta); }
+
+html[data-tema="oscuro"] .item-entrada { background: #1E293B; border-color: #334155; }
+html[data-tema="oscuro"] .entrada-header { color: #94A3B8; }
+html[data-tema="oscuro"] .entrada-resumen { color: #F1F5F9; }
+
+/* =====================================================
+   TABLA DE REPORTES (Blindada para modo claro y oscuro)
+   ===================================================== */
+.tabla-responsive {
+  overflow-x: auto;
+  border: 1px solid var(--borde-suave, #E2E8F0);
+  border-radius: 12px;
+  background: var(--fondo-tarjeta, #FFFFFF);
+}
+
+.tabla-entradas {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.tabla-entradas th {
+  background: var(--azul-medio, #2D7DD2);
+  color: #FFFFFF;
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 2px solid var(--azul-profundo, #1F4E79);
+}
+
+.tabla-entradas td {
+  padding: 12px;
+  border-bottom: 1px solid var(--borde-suave, #E2E8F0);
+  color: var(--texto, #22304A);
+}
+
+.tabla-entradas tr:last-child td {
+  border-bottom: none;
+}
+
+.fila-clickeable {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.fila-clickeable:hover {
+  background: var(--fondo-hover, #F0F6FD);
+}
+
+.cargando, .sin-resultados {
+  text-align: center;
+  padding: 24px;
+  color: var(--texto-secundario, #7A8699);
+  font-style: italic;
+}
+
+/* Ajustes específicos para MODO OSCURO */
+html[data-tema="oscuro"] .tabla-responsive {
+  background: #16233A;
+  border-color: #24344F;
+}
+html[data-tema="oscuro"] .tabla-entradas th {
+  background: #1B2A44;
+  color: #CFE0F7;
+  border-bottom-color: #2D7DD2;
+}
+html[data-tema="oscuro"] .tabla-entradas td {
+  border-color: #24344F;
+  color: #E6EDF7;
+}
+html[data-tema="oscuro"] .fila-clickeable:hover {
+  background: #1E293B;
+}
+
+/* =====================================================
+   MODAL DE DETALLE: SCROLL INTERNO (Mobile-friendly)
+   El header queda fijo arriba y el texto scrollea adentro.
+   ===================================================== */
+.modal-caja.modal-ancho {
+  max-height: 92vh;             /* nunca tapa toda la pantalla */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;             /* el scroll lo maneja el contenido */
+}
+
+.modal-header {
+  flex-shrink: 0;               /* el header no se achica */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #E2E8F0;
+  position: sticky;
+  top: 0;
+  background: var(--blanco, #fff); /* tapa el texto si scrollea por detrás */
+  z-index: 10;
+}
+
+html[data-tema="oscuro"] .modal-header {
+  background: #16233A;
+  border-color: #24344F;
+}
+
+#detalle-entrada-contenido {
+  overflow-y: auto;             /* scroll vertical interno */
+  -webkit-overflow-scrolling: touch; /* scroll nativo suave en Android */
+  flex: 1;                      /* ocupa todo el espacio restante */
+  padding-right: 5px;
+}
+
+.boton-cerrar {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #7A8699;
+  padding: 0 10px;
+}
+.boton-cerrar:hover { color: var(--rojo, #E5484D); }

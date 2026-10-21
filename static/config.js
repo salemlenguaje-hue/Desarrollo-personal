@@ -259,3 +259,29 @@ async function borrarDoc(nombre) {
 }
 
 cargarPreferenciasSibeli();
+
+/* =====================================================
+   AUTO-PUSH GITHUB
+   ===================================================== */
+async function cargarConfigAutoPush() {
+  // Asumimos que ya tenemos la config cargada o la pedimos
+  // Para simplificar, leemos el valor inicial del checkbox si existe
+  const checkbox = document.getElementById('toggle-auto-push');
+  if (checkbox) {
+    // Por defecto activado si no existe la clave
+    checkbox.checked = true; 
+    // Guardamos el estado inicial
+    fetch('/api/config/auto_push', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({valor: '1'}) });
+  }
+}
+
+function guardarAutoPush() {
+  const valor = document.getElementById('toggle-auto-push').checked ? '1' : '0';
+  fetch('/api/config/auto_push', { 
+    method: 'POST', 
+    headers: {'Content-Type': 'application/json'}, 
+    body: JSON.stringify({valor: valor}) 
+  }).then(() => avisar('Configuración de auto-push actualizada'));
+}
+
+// Necesitamos la ruta para guardar esta config específica

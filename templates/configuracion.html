@@ -13,6 +13,7 @@
     <a href="/" class="link-nav">Inicio</a>
     <a href="/analisis" class="link-nav">Análisis 📊</a>
     <a href="/tutor" class="link-nav">Sibeli ✨</a>
+    <a href="/reportes" class="link-nav">Reportes 🖨️</a>
     <a href="/configuracion" class="link-nav activo">Config ⚙️</a>
     <a href="/logout" class="link-nav salir">Salir</a>
   </header>
@@ -62,19 +63,17 @@
       <ul class="lista-config lista-chats" id="lista-docs"></ul>
     </section>
 
-    <!-- 3. AUDITORÍA DE ENTRADAS (SOLO LECTURA) -->
+    <!-- Auto-push GitHub -->
     <section class="tarjeta">
-      <h2>📜 Historial de Entradas (Solo Lectura)</h2>
-      <p class="ayuda">Vista cruda de la base de datos con sus firmas criptográficas. No se puede editar desde acá para proteger la cadena.</p>
-      <div class="tabla-cruda-wrap">
-        <table class="tabla-cruda" id="tabla-entradas">
-          <thead>
-            <tr><th>ID</th><th>Fecha</th><th>Temática</th><th>Min</th><th>Hash (inicio)</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <h2>🤖 Automatización</h2>
+      <label class="chip toggle-chip">
+        <input type="checkbox" id="toggle-auto-push" onchange="guardarAutoPush()">
+        🚀 Subir compilado diario a GitHub automáticamente (00:01)
+      </label>
     </section>
+
+    <!-- 3. AUDITORÍA DE ENTRADAS (SOLO LECTURA) -->
+    
   </main>
 
   <!-- Modal para ver documentos -->

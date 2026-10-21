@@ -1366,3 +1366,73 @@ def _escribir_docx(ruta, contenido):
         z.writestr('[Content_Types].xml', content_types)
         z.writestr('_rels/.rels', rels)
         z.writestr('word/document.xml', doc_xml)
+
+# ==================== AUTO-PUSH DIARIO ====================
+
+def generar_compilado_fecha(fecha_str):
+    """Genera el compilado para una fecha específica (formato YYYY-MM-DD)."""
+    # Reutilizamos la lógica de hoy, pero filtrando por la fecha dada
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT e.*, t.nombre as tematica_nombre,
+               GROUP_CONCAT(te.nombre, ', ') as tipos_nombres
+        FROM entradas e
+        JOIN tematicas t ON e.tematica_id = t.id
+        LEFT JOIN entrada_tipos et ON e.id = et.entrada_id
+        LEFT JOIN tipos_estudio te ON et.tipo_id = te.id
+        WHERE e.fecha = ?
+        GROUP BY e.id
+        ORDER BY e.fecha_creacion DESC
+    ''', (fecha_str,))
+    entradas = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    config = obtener_configuracion()
+    fecha_legible = datetime.strptime(fecha_str, '%Y-%m-%d').strftime('%d/%m/%Y')
+    
+    compilado = f"""📚 Diario de Capacitación — {fecha_legible}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 Racha actual: {config.get('racha_actual', 0)} días (Nivel {config.get('nivel_actual', 1)})
+
+📝 Sesiones del día:
+"""
+    if not entradas:
+        compilado += "\n⚠️ No hay entradas registradas este día.\n"
+        return compilado
+
+    tematicas_estudiadas = {}
+    for entrada in entradas:
+        nombre_tematica = entrada['tematica_nombre']
+        if nombre_tematica not in tematicas_estudiadas:
+            tematicas_estudiadas[nombre_tematica] = []
+        tematicas_estudiadas[nombre_tematica].append(entrada)
+
+    for tematica, entradas_tematica in tematicas_estudiadas.items():
+        compilado += f"\n🎓 {tematica}\n"
+        for entrada in entradas_tematica:
+            tipos = entrada.get('tipos_nombres', 'No especificado')
+            compilado += f"   • Tipo: {tipos}\n"
+            if entrada.get('resumen'):
+                compilado += f"   • Resumen: {entrada['resumen']}\n"
+
+    return compilado
+
+def buscar_entradas(texto):
+    """Busca entradas por descripción, resumen u observaciones."""
+    conn = obtener_conexion()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT e.*, t.nombre as tematica_nombre,
+               GROUP_CONCAT(te.nombre, ', ') as tipos_nombres
+        FROM entradas e
+        JOIN tematicas t ON e.tematica_id = t.id
+        LEFT JOIN entrada_tipos et ON e.id = et.entrada_id
+        LEFT JOIN tipos_estudio te ON et.tipo_id = te.id
+        WHERE e.descripcion LIKE ? OR e.resumen LIKE ? OR e.observaciones LIKE ?
+        GROUP BY e.id
+        ORDER BY e.fecha DESC
+    ''', (f'%{texto}%', f'%{texto}%', f'%{texto}%'))
+    resultados = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return resultados

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario — Reportes</title>
+  <script>document.documentElement.dataset.tema = localStorage.getItem('tema') || 'claro';</script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-usuario="{{ usuario }}">
+
+  <header class="header">
+    <img src="/static/salem-logo.png" alt="Logo SALEM">
+    <span class="espacio"></span>
+    <a href="/" class="link-nav">Inicio</a>
+    <a href="/analisis" class="link-nav">Análisis 📊</a>
+    <a href="/tutor" class="link-nav">Sibeli ✨</a>
+    <a href="/reportes" class="link-nav activo">Reportes 🖨️</a>
+    <a href="/configuracion" class="link-nav">Config ⚙️</a>
+    <button type="button" class="link-nav boton-tema" id="btn-tema" onclick="alternarTema()">🌙</button>
+    <a href="/logout" class="link-nav salir">Salir</a>
+  </header>
+
+  <main class="zona-reportes">
+    <div class="tarjeta">
+      <h2> Buscador de Entradas</h2>
+      <div class="fila-busqueda">
+        <input type="text" id="campo-busqueda" placeholder="Buscar en resúmenes, descripciones u observaciones...">
+        <button class="boton" onclick="buscar()">Buscar</button>
+      </div>
+      
+      <div id="resultados-busqueda" class="lista-resultados">
+        <p class="ayuda">Escribí un término para buscar en tu historial.</p>
+      </div>
+
+      <div class="acciones-reportes" id="acciones-reportes" hidden>
+        <button class="boton boton-dorado" onclick="generarReporte()">🖨️ Generar Reporte de seleccionadas</button>
+        <span id="contador-seleccion">0 seleccionadas</span>
+      </div>
+    </div>
+  
+    <div id="filtros-entradas" class="filtros-container" style="margin-top: 20px;"></div>
+    <div id="tabla-entradas-container" class="tabla-responsive">
+      <table class="tabla-entradas">
+        <thead>
+          <tr><th>ID</th><th>Fecha</th><th>Temática</th></tr>
+        </thead>
+        <tbody id="tabla-entradas-body">
+          <tr><td colspan="3" class="cargando">Cargando historial...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Modal para ver el detalle -->
+    <div class="modal-fondo" id="modal-detalle-entrada" hidden onclick="if (event.target === this) cerrarModalDetalle()">
+      <div class="modal-caja modal-ancho">
+        <div class="modal-header">
+          <h3>Detalle de Entrada</h3>
+          <button class="boton-cerrar" onclick="cerrarModalDetalle()">✕</button>
+        </div>
+        <div id="detalle-entrada-contenido" class="modal-body"></div>
+      </div>
+    </div>
+    <script src="/static/tabla-entradas.js"></script>
+
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/tema.js"></script>
+  <script src="/static/reportes.js"></script>
+</body>
+</html>
